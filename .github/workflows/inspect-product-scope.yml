@@ -1,0 +1,29 @@
+name: Inspect Easy Orders product scope
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect product metadata
+        env:
+          EASY_ORDERS_API_KEY: ${{ secrets.NOVA_EASY_ORDERS_API_KEY }}
+        run: |
+          set -euo pipefail
+          curl -fsS             -H "Api-Key: ${EASY_ORDERS_API_KEY}"             -H "Content-Type: application/json"             "https://api.easy-orders.net/api/v1/external-apps/products?page=1&limit=3&fields=id,name,slug,store_id,storeId,shop_id,shopId,store_name,storeName,brand,categories,tags,hidden,position,custom_currency,price,sale_price,thumb,images"             > body.json
+          python - <<'PY'
+          import json
+          d=json.load(open("body.json"))
+          items=d if isinstance(d,list) else d.get("data",d.get("products",[]))
+          for i,x in enumerate(items,1):
+              print("\nPRODUCT",i)
+              print("KEYS",sorted(x.keys()))
+              for k in ["id","name","slug","store_id","storeId","shop_id","shopId","store_name","storeName","brand","categories","tags","hidden","position","custom_currency","price","sale_price"]:
+                  if k in x:
+                      print(k, repr(x[k]))
+          PY
