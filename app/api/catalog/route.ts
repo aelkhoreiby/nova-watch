@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 const EASY_ORDERS_API = "https://api.easy-orders.net/api/v1/external-apps/products";
 const EASY_ORDERS_KEY = process.env.NOVA_EASY_ORDERS_API_KEY || process.env.EASY_ORDERS_API_KEY;
@@ -69,7 +69,7 @@ function normalizeProduct(product: EasyOrdersProduct) {
     type: "NOVA",
     price: money(price, currency),
     tone: toneFromProduct(product),
-    detail: cleanText(product.description) || "NOVA watch.",
+    detail: cleanText(product.description),
     checkoutUrl: "",
     slug: product.slug,
     currency,
@@ -113,7 +113,7 @@ export async function GET() {
         "Api-Key": EASY_ORDERS_KEY,
         "Content-Type": "application/json",
       },
-      cache: "no-store",
+      next: { revalidate: 60 },
     });
 
     if (!response.ok) {
