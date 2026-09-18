@@ -6,6 +6,7 @@ import {
   featureCopy,
   lifestyles,
   products,
+  type Lifestyle,
   type Product,
 } from "./data/products";
 
@@ -71,9 +72,9 @@ function ProductImage({
 }
 
 export default function Home() {
-  const [style, setStyle] = useState("CLASSIC");
+  const [style, setStyle] = useState<Product["type"]>("CLASSIC");
   const [feature, setFeature] = useState<keyof typeof featureCopy>("CASE");
-  const [life, setLife] = useState("OFFICE");
+  const [life, setLife] = useState<Lifestyle>("OFFICE");
   const [quickView, setQuickView] = useState(false);
 
   const active = products.find((p) => p.type === style) ?? products[0];
