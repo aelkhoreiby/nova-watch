@@ -22,3 +22,10 @@ Light editorial luxury: warm ivory, soft stone, charcoal and restrained bronze. 
 npm install
 npm run dev
 ```
+
+## Product Master Assets
+
+The UI now uses a typed product catalog in `app/data/products.ts` and supports real local product media under `public/products/<product-id>/`.
+
+The page automatically falls back to the existing CSS watch until real verified media is added. See `public/products/README.md` for the asset naming convention.
+
