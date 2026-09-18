@@ -1,0 +1,41 @@
+name: NOVA After Catalog QA
+
+on:
+  pull_request:
+
+jobs:
+  visual:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: |
+          npm install
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Capture production
+        run: |
+          mkdir -p visual
+          node <<'NODE'
+          const { chromium } = require("playwright");
+          (async () => {
+            const browser = await chromium.launch({headless:true});
+            const page = await browser.newPage({viewport:{width:1440,height:900},deviceScaleFactor:1});
+            const url="https://nova-ochre-omega.vercel.app/";
+            await page.goto(url,{waitUntil:"networkidle",timeout:60000});
+            await page.screenshot({path:"visual/desktop.png",fullPage:true});
+            await page.setViewportSize({width:390,height:844});
+            await page.goto(url,{waitUntil:"networkidle",timeout:60000});
+            await page.screenshot({path:"visual/mobile.png",fullPage:true});
+            console.log("TITLE",await page.title());
+            console.log("URL",page.url());
+            console.log("CATALOG",await page.locator(".product-card").count());
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nova-after-catalog-qa
+          path: visual/
