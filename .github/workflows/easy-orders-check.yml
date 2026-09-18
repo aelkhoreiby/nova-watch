@@ -37,4 +37,4 @@ jobs:
           fi
 
           echo "Easy Orders API connection is working."
-          printf '%s' "$body" | python -c 'import json,sys; data=json.load(sys.stdin); print("Products endpoint returned JSON successfully."); print("Top-level keys:", ", ".join(map(str, data.keys())) if isinstance(data, dict) else type(data).__name__)'
+          printf '%s' "$body" | python -c 'import json,sys; data=json.load(sys.stdin); items=data if isinstance(data,list) else data.get("data",data.get("products",[])); print("Products endpoint returned JSON successfully."); print("Product count:", len(items) if isinstance(items,list) else "unknown"); print("First product keys:", ", ".join(sorted(items[0].keys())) if isinstance(items,list) and items else "none")'
