@@ -4,6 +4,12 @@ export const revalidate = 60;
 
 const EASY_ORDERS_API = "https://api.easy-orders.net/api/v1/external-apps/products";
 const EASY_ORDERS_KEY = process.env.NOVA_EASY_ORDERS_API_KEY || process.env.EASY_ORDERS_API_KEY;
+const APPROVED_PRODUCT_IDS = new Set(
+  (process.env.NOVA_EASY_ORDERS_PRODUCT_IDS || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean)
+);
 
 type EasyOrdersProduct = {
   id?: string | number;
@@ -138,8 +144,18 @@ export async function GET() {
     if (batch.length < limit) break;
   }
 
-  const normalized = products
-    .filter((product) => !product.hidden)
+  const approvedProducts = products.filter((product) => {
+    if (product.hidden) return false;
+
+    if (APPROVED_PRODUCT_IDS.size > 0) {
+      return APPROVED_PRODUCT_IDS.has(String(product.id));
+    }
+
+    const identity = `${product.name || ""} ${product.slug || ""}`.toLowerCase();
+    return identity.includes("nova");
+  });
+
+  const normalized = approvedProducts
     .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
     .map(normalizeProduct);
 
@@ -148,6 +164,11 @@ export async function GET() {
     source: "easy-orders",
     syncedAt: new Date().toISOString(),
     count: normalized.length,
+    sourceCount: products.length,
+    approvalMode: APPROVED_PRODUCT_IDS.size > 0 ? "ids" : "nova-name-or-slug",
+    warning: normalized.length === 0
+      ? "No approved NOVA products were found in the Easy Orders catalog."
+      : undefined,
     products: normalized,
   }, {
     headers: {
