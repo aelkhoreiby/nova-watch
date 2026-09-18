@@ -83,6 +83,7 @@ export default function Home() {
   const [mediaKey, setMediaKey] = useState<"hero" | "detail" | "dial" | "wrist">("hero");
   const [language, setLanguage] = useState<"EN" | "AR">("EN");
   const shouldReduceMotion = useReducedMotion();
+  const t = (en: string, ar: string) => language === "AR" ? ar : en;
 
   useEffect(() => {
     document.documentElement.lang = language === "AR" ? "ar" : "en";
@@ -108,12 +109,12 @@ export default function Home() {
       <nav className="nav">
         <div className="logo">NOVA<span>®</span></div>
         <div className="navlinks">
-          <a href="#collection">COLLECTION</a>
-          <a href="#story">THE IDEA</a>
-          <a href="#contact">CONTACT</a>
+          <a href="#collection">{t("COLLECTION","المجموعة")}</a>
+          <a href="#story">{t("THE IDEA","الفكرة")}</a>
+          <a href="#contact">{t("CONTACT","تواصل")}</a>
         </div>
         <div className="nav-actions">
-          <a className="nav-shop" href={novaStoreUrl} onClick={() => trackNovaEvent("open_store", { placement: "nav" })}>SHOP</a>
+          <a className="nav-shop" href={novaStoreUrl} onClick={() => trackNovaEvent("open_store", { placement: "nav" })}>{t("SHOP","تسوق")}</a>
           <button className="language-toggle" type="button" onClick={() => setLanguage(language === "EN" ? "AR" : "EN")} aria-label="Switch language">
             {language === "EN" ? "AR" : "EN"}
           </button>
@@ -122,15 +123,15 @@ export default function Home() {
 
       <section className="hero">
         <div className="hero-copy">
-          <p className="eyebrow">NOVA WATCHES · UAE</p>
-          <h1>TIME.<br /><em>YOUR WAY.</em></h1>
+          <p className="eyebrow">{t("NOVA WATCHES · UAE","ساعات نوفا · الإمارات")}</p>
+          <h1>TIME.<br /><em>{t("YOUR WAY.","بطريقتك.")}</em></h1>
           <p className="lede">
-            A modern watch collection built around your rhythm — clean, confident and made to move with you.
+            {t("A modern watch collection built around your rhythm — clean, confident and made to move with you.","مجموعة ساعات عصرية مصممة حول إيقاعك — نظيفة، واثقة، ومواكبة لحركتك.")}
           </p>
           <div className="hero-actions">
-            <a className="btn dark" href="#collection">EXPLORE COLLECTION</a>
-            <a className="text-link" href="#story">DISCOVER NOVA ↓</a>
-            <a className="text-link" href={novaStoreUrl} onClick={() => trackNovaEvent("open_store", { placement: "hero" })}>ORDER NOW ↗</a>
+            <a className="btn dark" href="#collection">{t("EXPLORE COLLECTION","استكشف المجموعة")}</a>
+            <a className="text-link" href="#story">{t("DISCOVER NOVA ↓","اكتشف نوفا ↓")}</a>
+            <a className="text-link" href={novaStoreUrl} onClick={() => trackNovaEvent("open_store", { placement: "hero" })}>{t("ORDER NOW ↗","اطلب الآن ↗")}</a>
           </div>
         </div>
 
@@ -148,35 +149,35 @@ export default function Home() {
             tone={products[0].tone}
             eager
           />
-          <div className="floating-label l1">01 / SIGNATURE FORM</div>
-          <div className="floating-label l2">MADE FOR THE MOMENT</div>
+          <div className="floating-label l1">01 / {t("SIGNATURE FORM","هوية التصميم")}</div>
+          <div className="floating-label l2">{t("MADE FOR THE MOMENT","مصممة للحظة")}</div>
         </motion.div>
       </section>
 
       <section className="service-strip" aria-label="NOVA UAE service information">
-        <div><strong>{novaService.delivery}</strong><span>UAE DELIVERY</span></div>
-        <div><strong>{novaService.inspection}</strong><span>INSPECTION AVAILABLE</span></div>
-        <div><strong>{novaService.warranty}</strong><span>WARRANTY</span></div>
+        <div><strong>{novaService.delivery}</strong><span>{t("UAE DELIVERY","توصيل داخل الإمارات")}</span></div>
+        <div><strong>{novaService.inspection}</strong><span>{t("INSPECTION AVAILABLE","معاينة قبل الدفع")}</span></div>
+        <div><strong>{novaService.warranty}</strong><span>{t("WARRANTY","الضمان")}</span></div>
         <div><strong>{novaService.payment}</strong></div>
       </section>
 
       <section id="story" className="story">
         <div>
-          <p className="eyebrow">THE NOVA IDEA</p>
-          <h2>Not just a watch.<br /><em>A point of view.</em></h2>
+          <p className="eyebrow">{t("THE NOVA IDEA","فكرة نوفا")}</p>
+          <h2>{t("Not just a watch.","ليست مجرد ساعة.")}<br /><em>{t("A point of view.","وجهة نظر.")}</em></h2>
         </div>
         <p className="storytext">
-          From the first glance to the final detail, NOVA is designed to feel considered. The interface, the object, the way it sits on your wrist — one visual language.
+          {t("From the first glance to the final detail, NOVA is designed to feel considered. The interface, the object, the way it sits on your wrist — one visual language.","من النظرة الأولى حتى آخر تفصيلة، صُممت نوفا بعناية. الواجهة، القطعة، وطريقة ارتدائها على معصمك — لغة بصرية واحدة.")}
         </p>
       </section>
 
       <section id="collection" className="collection">
         <div className="section-head">
           <div>
-            <p className="eyebrow">THE COLLECTION</p>
-            <h2>Choose your <em>expression.</em></h2>
+            <p className="eyebrow">{t("THE COLLECTION","المجموعة")}</p>
+            <h2>{t("Choose your ","اختر ")}<em>{t("expression.","تعبيرك.")}</em></h2>
           </div>
-          <p>Move through the collection. Hover the watch. Change the context.</p>
+          <p>{t("Move through the collection. Hover the watch. Change the context.","تنقل بين المجموعة. حرّك مؤشر الفأرة فوق الساعة وغيّر السياق.")}</p>
         </div>
 
         <div className="selector-row">
@@ -248,23 +249,23 @@ export default function Home() {
                 window.location.assign(active.checkoutUrl || novaStoreUrl);
               }}
             >
-              BUY NOW
+              {t("BUY NOW","اشترِ الآن")}
             </button>
             <button className="quick-link" onClick={() => {
               setQuickView(true);
               trackNovaEvent("open_quick_view", { product: active.name });
-            }}>QUICK VIEW →</button>
+            }}>{t("QUICK VIEW →","عرض سريع ←")}</button>
 
-            <small>Demo catalog pricing — replace with your verified NOVA catalog.</small>
+            <small>{t("Demo catalog pricing — replace with your verified NOVA catalog.","الأسعار الحالية تجريبية — استبدلها بكتالوج نوفا الفعلي المعتمد.")}</small>
           </motion.div>
         </motion.div>
       </section>
 
       <section className="lifestyle">
         <div className="life-copy">
-          <p className="eyebrow">WEAR IT YOUR WAY</p>
-          <h2>One collection.<br /><em>Four moods.</em></h2>
-          <p>Choose the moment and see NOVA shift with you.</p>
+          <p className="eyebrow">{t("WEAR IT YOUR WAY","ارتدها بطريقتك")}</p>
+          <h2>{t("One collection.","مجموعة واحدة.")}<br /><em>{t("Four moods.","أربع حالات.")}</em></h2>
+          <p>{t("Choose the moment and see NOVA shift with you.","اختر اللحظة وشاهد نوفا تتغير معك.")}</p>
         </div>
 
         <div className="life-stage">
@@ -309,7 +310,7 @@ export default function Home() {
       </section>
 
       <section className="motion-band">
-        <p className="eyebrow">WATCH IN MOTION</p>
+        <p className="eyebrow">{t("WATCH IN MOTION","الساعة في الحركة")}</p>
         <div className="motion-word">
           <span>FORM</span><span>LIGHT</span><span>MOTION</span><span>TIME</span>
         </div>
@@ -317,34 +318,34 @@ export default function Home() {
 
       <section className="support" id="support">
         <div>
-          <p className="eyebrow">UAE SUPPORT</p>
-          <h2>Questions before<br /><em>you order?</em></h2>
-          <p className="support-lede">Delivery, payment, inspection and warranty information in one place.</p>
+          <p className="eyebrow">{t("UAE {t("SUPPORT","الدعم")}","دعم الإمارات")}</p>
+          <h2>{t("Questions before","أسئلتك قبل")}<br /><em>{t("you order?","الطلب؟")}</em></h2>
+          <p className="support-lede">{t("Delivery, payment, inspection and warranty information in one place.","معلومات التوصيل والدفع والمعاينة والضمان في مكان واحد.")}</p>
         </div>
         <div className="support-grid">
           <details open>
-            <summary>How fast is UAE delivery?</summary>
-            <p>Typical UAE delivery is 24–48 hours.</p>
+            <summary>{t("How fast is UAE delivery?","ما مدة التوصيل داخل الإمارات؟")}</summary>
+            <p>{t("Typical UAE delivery is 24–48 hours.","مدة التوصيل المعتادة داخل الإمارات 24–48 ساعة.")}</p>
           </details>
           <details>
-            <summary>Can I inspect before payment?</summary>
-            <p>Yes. Inspection before payment is available on the current NOVA UAE store.</p>
+            <summary>{t("Can I inspect before payment?","هل يمكنني المعاينة قبل الدفع؟")}</summary>
+            <p>{t("Yes. Inspection before payment is available on the current NOVA UAE store.","نعم. المعاينة قبل الدفع متاحة في متجر نوفا الإماراتي الحالي.")}</p>
           </details>
           <details>
-            <summary>Which payment methods are available?</summary>
-            <p>Cash on delivery, Apple Pay and cards are currently listed.</p>
+            <summary>{t("Which payment methods are available?","ما طرق الدفع المتاحة؟")}</summary>
+            <p>{t("Cash on delivery, Apple Pay and cards are currently listed.","المتاح حاليًا: الدفع عند الاستلام، Apple Pay والبطاقات.")}</p>
           </details>
           <details>
-            <summary>How can I contact NOVA?</summary>
+            <summary>{t("How can I contact NOVA?","كيف أتواصل مع نوفا؟")}</summary>
             <p><a href="mailto:${novaSupport.email}">{novaSupport.email}</a><br />{novaSupport.address}</p>
           </details>
         </div>
       </section>
 
       <section className="cta">
-        <p className="eyebrow">NOVA / UAE</p>
-        <h2>Find the time<br /><em>that feels like you.</em></h2>
-        <a className="btn light" href={novaStoreUrl} onClick={() => trackNovaEvent("open_store", { placement: "cta" })}>SHOP NOVA</a>
+        <p className="eyebrow">NOVA / {language === "AR" ? "الإمارات" : "UAE"}</p>
+        <h2>{t("Find the time","اعثر على الوقت")}<br /><em>{t("that feels like you.","الذي يشبهك.")}</em></h2>
+        <a className="btn light" href={novaStoreUrl} onClick={() => trackNovaEvent("open_store", { placement: "cta" })}>{t("SHOP NOVA","تسوق نوفا")}</a>
       </section>
 
       <footer id="contact">
@@ -352,8 +353,8 @@ export default function Home() {
         <p>TIME. YOUR WAY.</p>
         <div>
           <a href="#support">SUPPORT</a>
-          <a href="mailto:${novaSupport.email}">EMAIL</a>
-          <a href={novaStoreUrl}>STORE</a>
+          <a href="mailto:${novaSupport.email}">{t("EMAIL","البريد")}</a>
+          <a href={novaStoreUrl}>{t("STORE","المتجر")}</a>
         </div>
       </footer>
 
