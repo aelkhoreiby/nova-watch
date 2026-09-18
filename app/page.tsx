@@ -381,7 +381,7 @@ export default function Home() {
                 window.location.assign(active.checkoutUrl || novaStoreUrl);
               }}
             >
-              BUY NOW
+              {t("BUY NOW","اشترِ الآن")}
             </button>
           </div>
         </div>
