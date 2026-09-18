@@ -21,34 +21,16 @@ jobs:
             exit 1
           fi
 
-          response="$(curl -sS -w '\n%{http_code}'             -H "Api-Key: ${EASY_ORDERS_API_KEY}"             -H "Content-Type: application/json"             https://api.easy-orders.net/api/v1/external-apps/products?page=1&limit=100&fields=id,name,price,sale_price,description,slug,thumb,images,quantity,track_stock,hidden,disable_orders_for_no_stock,custom_currency,position&join=Variations.Props,Variants.VariationProps)"
+          response="$(curl -sS -w '\n%{http_code}'             -H "Api-Key: ${EASY_ORDERS_API_KEY}"             -H "Content-Type: application/json"             "https://api.easy-orders.net/api/v1/external-apps/products?page=1&limit=100")"
 
           body="$(printf '%s\n' "$response" | sed '$d')"
           status="$(printf '%s\n' "$response" | tail -n1)"
 
           echo "Easy Orders HTTP status: $status"
-          echo "Easy Orders response:"
-          printf '%s\n' "$body" | head -c 4000
-          printf '\n'
 
           if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
-            echo "Easy Orders API authentication/request failed."
+            echo "Easy Orders API request failed."
             exit 1
           fi
 
-          echo "Easy Orders API connection is working."
-
-          first_id="$(printf '%s' "$body" | python -c 'import json,sys; data=json.load(sys.stdin); items=data if isinstance(data,list) else data.get("data",data.get("products",[])); print(items[0].get("id","") if items else "")')"
-
-          if [ -n "$first_id" ]; then
-            detail="$(curl -sS -w '\n%{http_code}' \
-              -H "Api-Key: \${EASY_ORDERS_API_KEY}" \
-              -H "Content-Type: application/json" \
-              "https://api.easy-orders.net/api/v1/external-apps/products/$first_id")"
-            detail_body="$(printf '%s\n' "$detail" | sed '$d')"
-            detail_status="$(printf '%s\n' "$detail" | tail -n1)"
-            echo "Easy Orders single-product HTTP status: $detail_status"
-            printf '%s' "$detail_body" | python -c 'import json,sys; data=json.load(sys.stdin); print("Single-product keys:", ", ".join(sorted(data.keys())) if isinstance(data,dict) else type(data).__name__)'
-          fi
-
-          printf '%s' "$body" | python -c 'import json,sys; data=json.load(sys.stdin); items=data if isinstance(data,list) else data.get("data",data.get("products",[])); print("Products endpoint returned JSON successfully."); print("Product count:", len(items) if isinstance(items,list) else "unknown"); print("Catalog names:"); [print(f"{i+1}. {x.get("name","")} | {x.get("slug","")}") for i,x in enumerate(items)]'
+          printf '%s' "$body" | python -c 'import json,sys; data=json.load(sys.stdin); items=data if isinstance(data,list) else data.get("data",data.get("products",[])); print("Easy Orders API connection is working."); print("Product count returned:", len(items) if isinstance(items,list) else "unknown")'
