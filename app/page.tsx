@@ -1,92 +1,75 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   fallbackProduct,
-  featureCopy,
-  lifestyles,
   type Lifestyle,
   type Product,
 } from "./data/products";
 import { novaCatalogApiUrl, novaService, novaStoreUrl, novaSupport } from "./data/site";
 import { trackNovaEvent } from "./lib/analytics";
 
-function Watch({ tone = "ivory", small = false }: { tone?: Product["tone"]; small?: boolean }) {
-  const shouldReduceMotion = useReducedMotion();
-
-  return (
-    <motion.div
-      className={`watch-wrap ${small ? "small" : ""} tone-${tone}`}
-      whileHover={shouldReduceMotion ? undefined : { rotateY: -10, rotateX: 5, scale: 1.025 }}
-      transition={{ type: "spring", stiffness: 180, damping: 18 }}
-    >
-      <div className="strap top" />
-      <div className="case">
-        <div className="bezel">
-          <div className="dial">
-            <span className="marker m12" />
-            <span className="marker m3" />
-            <span className="marker m6" />
-            <span className="marker m9" />
-            <span className="hand hour" />
-            <span className="hand minute" />
-            <span className="hand second" />
-            <span className="brand-mark">NOVA</span>
-          </div>
-        </div>
-      </div>
-      <div className="strap bottom" />
-    </motion.div>
-  );
-}
+const lifestyles: Array<{
+  key: Lifestyle;
+  label: string;
+  subtitle: string;
+  imageKey: Lifestyle;
+}> = [
+  { key: "OFFICE", label: "OFFICE", subtitle: "Sharp from nine to five.", imageKey: "OFFICE" },
+  { key: "NIGHT", label: "NIGHT", subtitle: "Made for the after hours.", imageKey: "NIGHT" },
+  { key: "DATE", label: "DATE", subtitle: "A little more presence.", imageKey: "DATE" },
+  { key: "TRAVEL", label: "TRAVEL", subtitle: "Built to move with you.", imageKey: "TRAVEL" },
+];
 
 function ProductImage({
   src,
   alt,
-  tone,
-  small = false,
-  eager = false,
+  fallback,
+  className = "",
 }: {
   src?: string;
   alt: string;
-  tone: Product["tone"];
-  small?: boolean;
-  eager?: boolean;
+  fallback: Product;
+  className?: string;
 }) {
   const [failed, setFailed] = useState(false);
 
   if (!src || failed) {
-    return <Watch tone={tone} small={small} />;
+    return (
+      <div className={`watch-fallback ${className}`} aria-label={alt}>
+        <div className="watch-fallback-face">
+          <span className="watch-brand">NOVA</span>
+          <span className="watch-hand hour" />
+          <span className="watch-hand minute" />
+          <span className="watch-dot" />
+        </div>
+      </div>
+    );
   }
 
   return (
-    <motion.img
-      className={`product-media ${small ? "small" : ""}`}
+    <img
       src={src}
       alt={alt}
-      loading={eager ? "eager" : "lazy"}
+      className={`product-image ${className}`}
       onError={() => setFailed(true)}
-      initial={{ opacity: 0, scale: 0.97 }}
-      animate={{ opacity: 1, scale: 1 }}
-      whileHover={{ scale: 1.025 }}
-      transition={{ duration: 0.35 }}
+      loading="lazy"
     />
   );
 }
 
 export default function Home() {
+  const reducedMotion = useReducedMotion();
   const [catalog, setCatalog] = useState<Product[]>([]);
-  const [catalogError, setCatalogError] = useState(false);
-  const [catalogWarning, setCatalogWarning] = useState(false);
-  const [style, setStyle] = useState<string>("");
-  const [feature, setFeature] = useState<keyof typeof featureCopy>("CASE");
-  const [life, setLife] = useState<Lifestyle>("OFFICE");
-  const [quickView, setQuickView] = useState(false);
-  const [mediaKey, setMediaKey] = useState<"hero" | "detail" | "dial" | "wrist">("hero");
+  const [activeId, setActiveId] = useState("");
   const [language, setLanguage] = useState<"EN" | "AR">("EN");
-  const shouldReduceMotion = useReducedMotion();
-  const t = (en: string, ar: string) => language === "AR" ? ar : en;
+  const [cart, setCart] = useState<Product[]>([]);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [catalogError, setCatalogError] = useState(false);
+  const [installmentsEnabled, setInstallmentsEnabled] = useState(false);
+
+  const t = (en: string, ar: string) => (language === "AR" ? ar : en);
 
   useEffect(() => {
     document.documentElement.lang = language === "AR" ? "ar" : "en";
@@ -94,342 +77,310 @@ export default function Home() {
   }, [language]);
 
   useEffect(() => {
-    trackNovaEvent("view_content", { page: "home" });
-
-    let cancelled = false;
-
     fetch(novaCatalogApiUrl, { cache: "no-store" })
       .then((response) => {
-        if (!response.ok) throw new Error("Catalog request failed");
+        if (!response.ok) throw new Error("Catalog unavailable");
         return response.json();
       })
-      .then((payload: { products?: Product[]; warning?: string }) => {
-        if (cancelled) return;
-        const nextProducts = Array.isArray(payload.products) ? payload.products : [];
-        setCatalog(nextProducts);
-        setStyle(nextProducts[0]?.id ?? "");
+      .then((payload: { products?: Product[] }) => {
+        const next = Array.isArray(payload.products) && payload.products.length
+          ? payload.products
+          : [];
+        setCatalog(next);
+        setActiveId(next[0]?.id ?? "");
         setCatalogError(false);
-        setCatalogWarning(Boolean(payload.warning) && nextProducts.length === 0);
       })
       .catch(() => {
-        if (cancelled) return;
-        setCatalogError(true);
-        setCatalogWarning(false);
         setCatalog([]);
-        setStyle("");
+        setActiveId("");
+        setCatalogError(true);
       });
 
-    return () => {
-      cancelled = true;
-    };
+    trackNovaEvent("view_content", { page: "home" });
   }, []);
 
   const products = catalog.length ? catalog : [fallbackProduct];
-  const active = products.find((p) => p.id === style) ?? products[0];
-  const activeMedia =
-    active.media?.[mediaKey] ??
-    active.media?.hero ??
-    active.media?.detail;
-  const activeLife = active.media?.lifestyle?.[life];
-  const { scrollYProgress } = useScroll();
-  const heroY = useTransform(scrollYProgress, [0, 0.35], [0, 130]);
-  const heroRotate = useTransform(scrollYProgress, [0, 0.35], [0, -8]);
+  const active = products.find((product) => product.id === activeId) ?? products[0];
+  const featured = products.slice(0, 3);
+  const heroImage = products[0]?.media?.hero ?? products[0]?.media?.detail;
+
+  const cartCount = cart.length;
+  const cartTotal = useMemo(
+    () =>
+      cart.reduce((total, product) => {
+        const raw = product.price.replace(/[^0-9.]/g, "");
+        return total + (Number(raw) || 0);
+      }, 0),
+    [cart],
+  );
+
+  function addToBag(product: Product) {
+    setCart((items) => [...items, product]);
+    setCartOpen(true);
+    trackNovaEvent("select_product", { product: product.name, action: "add_to_bag" });
+  }
+
+  function buyNow(product: Product) {
+    trackNovaEvent("click_buy", { product: product.name, price: product.price });
+    window.location.assign(product.checkoutUrl || novaStoreUrl);
+  }
+
+  function toggleLanguage() {
+    setLanguage((value) => (value === "EN" ? "AR" : "EN"));
+  }
 
   return (
-    <main>
-      <nav className="nav">
-        <div className="logo">NOVA<span>®</span></div>
-        <div className="navlinks">
-          <a href="#collection">{t("COLLECTION","المجموعة")}</a>
-          <a href="#story">{t("THE IDEA","الفكرة")}</a>
-          <a href="#contact">{t("CONTACT","تواصل")}</a>
+    <main className="nova-site">
+      <div className="utility-bar">
+        <div className="utility-items">
+          <span>UAE DELIVERY 24–48H</span>
+          <span>2 YEARS WARRANTY</span>
+          <span>{installmentsEnabled ? "TABBY / TAMARA AVAILABLE" : "COD · APPLE PAY · CARDS"}</span>
         </div>
-        <div className="nav-actions">
-          <a className="nav-shop" href={novaStoreUrl} onClick={() => trackNovaEvent("open_store", { placement: "nav" })}>{t("SHOP","تسوق")}</a>
-          <button className="language-toggle" type="button" onClick={() => setLanguage(language === "EN" ? "AR" : "EN")} aria-label="Switch language">
-            {language === "EN" ? "AR" : "EN"}
-          </button>
+        <div className="utility-right">
+          <button onClick={toggleLanguage} type="button">{language === "EN" ? "AR" : "EN"}</button>
+          <button type="button" onClick={() => setCartOpen(true)}>BAG ({cartCount})</button>
         </div>
+      </div>
+
+      <nav className="nova-nav">
+        <button className="nav-menu" type="button" onClick={() => document.getElementById("collection")?.scrollIntoView({ behavior: "smooth" })}>
+          MENU
+        </button>
+        <div className="nova-logo">NOVA<span>®</span></div>
+        <div className="nav-links">
+          <a href="#collection">{t("COLLECTION", "المجموعة")}</a>
+          <a href="#story">{t("THE IDEA", "الفكرة")}</a>
+          <a href="#support">{t("SUPPORT", "الدعم")}</a>
+        </div>
+        <button className="nav-bag" type="button" onClick={() => setCartOpen(true)}>
+          BAG <span>{cartCount}</span>
+        </button>
       </nav>
 
-      <section className="hero">
-        <div className="hero-copy">
-          <p className="eyebrow">{t("NOVA WATCHES · UAE","ساعات نوفا · الإمارات")}</p>
-          <h1>TIME.<br /><em>{t("YOUR WAY.","بطريقتك.")}</em></h1>
-          <p className="lede">
-            {t("A modern watch collection built around your rhythm — clean, confident and made to move with you.","مجموعة ساعات عصرية مصممة حول إيقاعك — نظيفة، واثقة، ومواكبة لحركتك.")}
-          </p>
-          <div className="hero-actions">
-            <a className="btn dark" href="#collection">{t("EXPLORE COLLECTION","استكشف المجموعة")}</a>
-            <a className="text-link" href="#story">{t("DISCOVER NOVA ↓","اكتشف نوفا ↓")}</a>
-            <a className="text-link" href={novaStoreUrl} onClick={() => trackNovaEvent("open_store", { placement: "hero" })}>{t("ORDER NOW ↗","اطلب الآن ↗")}</a>
-          </div>
+      <section className="hero-new">
+        <div className="hero-overlay" />
+        <div className="hero-copy-new">
+          <p className="hero-kicker">PREMIUM MEN&apos;S WATCHES · UAE</p>
+          <h1>TIME.<br /><em>YOUR WAY.</em></h1>
+          <p>{t("Precision. Style. Freedom.", "دقة. أناقة. حرية.")}</p>
+          <button className="primary-cta" type="button" onClick={() => document.getElementById("collection")?.scrollIntoView({ behavior: "smooth" })}>
+            {t("SHOP NOVA →", "تسوق نوفا ←")}
+          </button>
         </div>
 
         <motion.div
-          className="hero-watch"
-          style={{
-            y: shouldReduceMotion ? 0 : heroY,
-            rotateZ: shouldReduceMotion ? 0 : heroRotate,
-          }}
+          className="hero-product"
+          initial={{ opacity: 0, y: reducedMotion ? 0 : 26, scale: reducedMotion ? 1 : 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
         >
-          <div className="orb" />
-          <ProductImage
-            src={products[0].media?.hero}
-            alt={products[0].name}
-            tone={products[0].tone}
-            eager
-          />
-          <div className="floating-label l1">01 / {t("LIVE CATALOG","كتالوج مباشر")}</div>
-          <div className="floating-label l2">{t("MADE FOR THE MOMENT","مصممة للحظة")}</div>
+          <div className="hero-glow" />
+          <ProductImage src={heroImage} alt={products[0]?.name || "NOVA watch"} fallback={products[0]} />
+          <div className="hero-index">01 / 03</div>
         </motion.div>
-      </section>
 
-      <section className="service-strip" aria-label="NOVA UAE service information">
-        <div><strong>{novaService.delivery}</strong><span>{t("UAE DELIVERY","توصيل داخل الإمارات")}</span></div>
-        <div><strong>{novaService.inspection}</strong><span>{t("INSPECTION AVAILABLE","معاينة قبل الدفع")}</span></div>
-        <div><strong>{novaService.warranty}</strong><span>{t("WARRANTY","الضمان")}</span></div>
-        <div><strong>{novaService.payment}</strong></div>
-      </section>
-
-      <section id="story" className="story">
-        <div>
-          <p className="eyebrow">{t("THE NOVA IDEA","فكرة نوفا")}</p>
-          <h2>{t("Not just a watch.","ليست مجرد ساعة.")}<br /><em>{t("A point of view.","وجهة نظر.")}</em></h2>
+        <div className="hero-trust">
+          <div><strong>24–48H</strong><span>UAE DELIVERY</span></div>
+          <div><strong>2 YEARS</strong><span>WARRANTY</span></div>
+          <div><strong>COD</strong><span>PAY AT YOUR DOOR</span></div>
         </div>
-        <p className="storytext">
-          {t("From the first glance to the final detail, NOVA is designed to feel considered. The interface, the object, the way it sits on your wrist — one visual language.","من النظرة الأولى حتى آخر تفصيلة، صُممت نوفا بعناية. الواجهة، القطعة، وطريقة ارتدائها على معصمك — لغة بصرية واحدة.")}
-        </p>
       </section>
 
-      <section id="collection" className="collection">
-        <div className="section-head">
+      <section id="collection" className="new-collection">
+        <div className="section-intro">
           <div>
-            <p className="eyebrow">{t("THE COLLECTION","المجموعة")}</p>
-            <h2>{t("Choose your ","اختر ")}<em>{t("expression.","تعبيرك.")}</em></h2>
+            <p className="section-kicker">FEATURED COLLECTION</p>
+            <h2>OUR TOP <em>PICKS.</em></h2>
           </div>
-          <p>{t("Move through the collection. Hover the watch. Change the context.","تنقل بين المجموعة. حرّك مؤشر الفأرة فوق الساعة وغيّر السياق.")}</p>
+          <p>{t("Real NOVA products, live from the connected catalog.", "منتجات نوفا الحقيقية، مباشرة من الكتالوج المتصل.")}</p>
         </div>
 
-        <div className="catalog-status" role="status">
-          <span className={catalogError ? "status-dot offline" : "status-dot"} />
-          {catalogError
-            ? t("Live catalog is temporarily unavailable.","الكتالوج المباشر غير متاح مؤقتًا.")
-            : catalogWarning
-              ? t("Waiting for approved NOVA products.","في انتظار منتجات نوفا المعتمدة.")
-              : t("Live catalog · synced from Easy Orders","كتالوج مباشر · متزامن مع Easy Orders")}
+        {catalogError ? (
+          <div className="catalog-notice">Live catalog temporarily unavailable. Showing the NOVA fallback experience.</div>
+        ) : null}
+
+        <div className="product-grid">
+          {featured.map((product, index) => {
+            const wrist = product.media?.wrist;
+            const isActive = product.id === active.id;
+            return (
+              <motion.article
+                key={product.id}
+                className={`product-card ${isActive ? "active" : ""}`}
+                whileHover={reducedMotion ? undefined : { y: -8 }}
+                transition={{ duration: 0.28 }}
+                onMouseEnter={() => setActiveId(product.id)}
+              >
+                <div className="product-art">
+                  <div className="product-main-view">
+                    <ProductImage
+                      src={product.media?.hero ?? product.media?.detail}
+                      alt={product.name}
+                      fallback={product}
+                    />
+                  </div>
+                  {wrist ? (
+                    <div className="product-wrist-view">
+                      <ProductImage src={wrist} alt={`${product.name} on wrist`} fallback={product} />
+                    </div>
+                  ) : null}
+                  <div className="product-number">0{index + 1}</div>
+                </div>
+
+                <div className="product-info">
+                  <p className="product-type">{product.type}</p>
+                  <h3>{product.name}</h3>
+                  <p className="product-detail">{product.detail || "Designed for the way you move."}</p>
+                  <strong className="product-price">{product.price}</strong>
+                  <div className="product-actions">
+                    <button type="button" className="bag-btn" onClick={() => addToBag(product)}>
+                      {t("ADD TO BAG", "أضف للحقيبة")}
+                    </button>
+                    <button type="button" className="buy-btn" onClick={() => buyNow(product)}>
+                      {t("BUY NOW", "اشترِ الآن")}
+                    </button>
+                  </div>
+                  <small>{product.available === false ? t("Currently unavailable.", "غير متاح حاليًا.") : t("Live catalog product.", "منتج من الكتالوج المباشر.")}</small>
+                </div>
+              </motion.article>
+            );
+          })}
         </div>
-
-        <div className="selector-row">
-          {products.map((p) => (
-            <button
-              key={p.id}
-              className={style === p.id ? "selected" : ""}
-              onClick={() => {
-                setStyle(p.id);
-                setMediaKey("hero");
-                trackNovaEvent("select_product", { product: p.name, type: p.type });
-              }}
-            >
-              {p.name}
-            </button>
-          ))}
-        </div>
-
-        <motion.div className="featured" layout>
-          <div className="featured-visual">
-            <ProductImage
-              src={activeMedia}
-              alt={active.name}
-              tone={active.tone}
-            />
-            <div className="media-thumbs" aria-label="Product views">
-              {(["hero", "detail", "dial", "wrist"] as const).map((key) => (
-                <button
-                  key={key}
-                  type="button"
-                  className={mediaKey === key ? "selected" : ""}
-                  onClick={() => setMediaKey(key)}
-                  disabled={!active.media?.[key]}
-                >
-                  {key.toUpperCase()}
-                </button>
-              ))}
-            </div>
-            <button className={`hotspot h1 ${feature === "CASE" ? "active" : ""}`} onClick={() => setFeature("CASE")}>
-              CASE<span>{featureCopy.CASE}</span>
-            </button>
-            <button className={`hotspot h2 ${feature === "DIAL" ? "active" : ""}`} onClick={() => setFeature("DIAL")}>
-              DIAL<span>{featureCopy.DIAL}</span>
-            </button>
-            <button className={`hotspot h3 ${feature === "STRAP" ? "active" : ""}`} onClick={() => setFeature("STRAP")}>
-              STRAP<span>{featureCopy.STRAP}</span>
-            </button>
-            <button className={`hotspot h4 ${feature === "FINISH" ? "active" : ""}`} onClick={() => setFeature("FINISH")}>
-              FINISH<span>{featureCopy.FINISH}</span>
-            </button>
-          </div>
-
-          <motion.div
-            className="featured-copy"
-            key={active.name}
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <p className="eyebrow">{active.type}</p>
-            <h3>{active.name}</h3>
-            <p>{active.detail}</p>
-            <p className="feature-text">{featureCopy[feature]}</p>
-            <div className="price">{active.price}</div>
-
-            <button
-              className="btn dark full"
-              onClick={() => {
-                trackNovaEvent("click_buy", { product: active.name, price: active.price });
-                window.location.assign(active.checkoutUrl || novaStoreUrl);
-              }}
-            >
-              {t("BUY NOW","اشترِ الآن")}
-            </button>
-            <button className="quick-link" onClick={() => {
-              setQuickView(true);
-              trackNovaEvent("open_quick_view", { product: active.name });
-            }}>{t("QUICK VIEW →","عرض سريع ←")}</button>
-
-            <small>
-              {active.available === false
-                ? t("Currently unavailable.","غير متاح حاليًا.")
-                : t("Live catalog data from Easy Orders.","بيانات الكتالوج المباشرة من Easy Orders.")}
-            </small>
-          </motion.div>
-        </motion.div>
       </section>
 
-      <section className="lifestyle">
-        <div className="life-copy">
-          <p className="eyebrow">{t("WEAR IT YOUR WAY","ارتدها بطريقتك")}</p>
-          <h2>{t("One collection.","مجموعة واحدة.")}<br /><em>{t("Four moods.","أربع حالات.")}</em></h2>
-          <p>{t("Choose the moment and see NOVA shift with you.","اختر اللحظة وشاهد نوفا تتغير معك.")}</p>
+      <section id="story" className="statement-section">
+        <div className="statement-image">
+          <ProductImage src={active.media?.wrist ?? active.media?.hero} alt={active.name} fallback={active} />
+        </div>
+        <div className="statement-copy">
+          <p className="section-kicker">MORE THAN A WATCH</p>
+          <h2>A<br /><em>STATEMENT.</em></h2>
+          <p>{t("From office hours to weekend escapes, NOVA is designed to move with your world.", "من ساعات العمل إلى عطلات نهاية الأسبوع، صُممت نوفا لتتحرك مع عالمك.")}</p>
+          <button type="button" className="outline-cta" onClick={() => document.getElementById("lifestyle")?.scrollIntoView({ behavior: "smooth" })}>
+            {t("EXPLORE THE COLLECTION →", "استكشف المجموعة ←")}
+          </button>
         </div>
 
-        <div className="life-stage">
-          <motion.div
-            className="life-card"
-            key={`${active.name}-${life}`}
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-          >
-            <div className="life-index">0{lifestyles.indexOf(life) + 1}</div>
-            <ProductImage
-              src={activeLife}
-              alt={`${active.name} — ${life}`}
-              tone={
-                life === "NIGHT"
-                  ? "black"
-                  : life === "TRAVEL"
-                    ? "steel"
-                    : life === "DATE"
-                      ? "bronze"
-                      : "ivory"
-              }
-            />
-            <h3>{life}</h3>
-          </motion.div>
-        </div>
-
-        <div className="life-tabs">
-          {lifestyles.map((x) => (
+        <div className="lifestyle-strip" id="lifestyle">
+          {lifestyles.slice(0, 3).map((item) => (
             <button
-              key={x}
-              className={life === x ? "selected" : ""}
+              type="button"
+              key={item.key}
+              className="lifestyle-card"
               onClick={() => {
-                setLife(x);
-                trackNovaEvent("select_lifestyle", { product: active.name, lifestyle: x });
+                const image = active.media?.lifestyle?.[item.imageKey];
+                if (image) {
+                  setActiveId(active.id);
+                }
+                trackNovaEvent("select_lifestyle", { product: active.name, lifestyle: item.key });
               }}
             >
-              {x}
+              <ProductImage
+                src={active.media?.lifestyle?.[item.imageKey] ?? active.media?.hero}
+                alt={item.label}
+                fallback={active}
+              />
+              <span>{item.label}</span>
+              <small>{item.subtitle}</small>
             </button>
           ))}
         </div>
       </section>
 
-      <section className="motion-band">
-        <p className="eyebrow">{t("WATCH IN MOTION","الساعة في الحركة")}</p>
-        <div className="motion-word">
-          <span>FORM</span><span>LIGHT</span><span>MOTION</span><span>TIME</span>
+      <section className="confidence-section">
+        <div className="confidence-heading">
+          <p className="section-kicker">SHOP WITH CONFIDENCE</p>
+          <h2>Everything you need.<br /><em>Nothing you don&apos;t.</em></h2>
+        </div>
+        <div className="confidence-grid">
+          <div><strong>24–48H</strong><span>UAE DELIVERY</span></div>
+          <div><strong>2 YEARS</strong><span>WARRANTY</span></div>
+          <div><strong>14 DAYS</strong><span>EASY RETURNS</span></div>
+          <div><strong>APPLE PAY</strong><span>SECURE CHECKOUT</span></div>
+          <div><strong>CARDS</strong><span>VISA · MASTERCARD</span></div>
         </div>
       </section>
 
-      <section className="support" id="support">
+      <section id="support" className="support-new">
         <div>
-          <p className="eyebrow">{t("UAE SUPPORT","دعم الإمارات")}</p>
-          <h2>{t("Questions before","أسئلتك قبل")}<br /><em>{t("you order?","الطلب؟")}</em></h2>
-          <p className="support-lede">{t("Delivery, payment, inspection and warranty information in one place.","معلومات التوصيل والدفع والمعاينة والضمان في مكان واحد.")}</p>
+          <p className="section-kicker">UAE SUPPORT</p>
+          <h2>Ready when<br /><em>you are.</em></h2>
         </div>
-        <div className="support-grid">
-          <details open>
-            <summary>{t("How fast is UAE delivery?","ما مدة التوصيل داخل الإمارات؟")}</summary>
-            <p>{t("Typical UAE delivery is 24–48 hours.","مدة التوصيل المعتادة داخل الإمارات 24–48 ساعة.")}</p>
-          </details>
-          <details>
-            <summary>{t("Can I inspect before payment?","هل يمكنني المعاينة قبل الدفع؟")}</summary>
-            <p>{t("Yes. Inspection before payment is available on the current NOVA UAE store.","نعم. المعاينة قبل الدفع متاحة في متجر نوفا الإماراتي الحالي.")}</p>
-          </details>
-          <details>
-            <summary>{t("Which payment methods are available?","ما طرق الدفع المتاحة؟")}</summary>
-            <p>{t("Cash on delivery, Apple Pay and cards are currently listed.","المتاح حاليًا: الدفع عند الاستلام، Apple Pay والبطاقات.")}</p>
-          </details>
-          <details>
-            <summary>{t("How can I contact NOVA?","كيف أتواصل مع نوفا؟")}</summary>
-            <p><a href={`mailto:${novaSupport.email}`}>{novaSupport.email}</a><br />{novaSupport.address}</p>
-          </details>
+        <div className="support-links">
+          <a href={`mailto:${novaSupport.email}`}>{novaSupport.email}</a>
+          <span>{novaSupport.address}</span>
+          <button type="button" onClick={() => document.getElementById("collection")?.scrollIntoView({ behavior: "smooth" })}>
+            {t("BACK TO COLLECTION →", "العودة إلى المجموعة ←")}
+          </button>
         </div>
       </section>
 
-      <section className="cta">
-        <p className="eyebrow">NOVA / {language === "AR" ? "الإمارات" : "UAE"}</p>
-        <h2>{t("Find the time","اعثر على الوقت")}<br /><em>{t("that feels like you.","الذي يشبهك.")}</em></h2>
-        <a className="btn light" href={novaStoreUrl} onClick={() => trackNovaEvent("open_store", { placement: "cta" })}>{t("SHOP NOVA","تسوق نوفا")}</a>
-      </section>
-
-      <footer id="contact">
-        <div className="logo">NOVA<span>®</span></div>
+      <footer className="nova-footer">
+        <div className="footer-logo">NOVA</div>
         <p>TIME. YOUR WAY.</p>
-        <div>
-          <a href="#support">{t("SUPPORT","الدعم")}</a>
-          <a href={`mailto:${novaSupport.email}`}>{t("EMAIL","البريد")}</a>
-          <a href={novaStoreUrl}>{t("STORE","المتجر")}</a>
+        <div className="footer-links">
+          <a href="#collection">Collection</a>
+          <a href="#story">About</a>
+          <a href="#support">Contact</a>
         </div>
       </footer>
 
-      <a className="mobile-buy" href={novaStoreUrl} onClick={() => trackNovaEvent("open_store", { placement: "mobile" })}>{t("SHOP NOVA","تسوق نوفا")}</a>
-
-      {quickView && (
-        <div className="modal" onClick={() => setQuickView(false)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <button className="close" onClick={() => setQuickView(false)}>×</button>
-            <ProductImage
-              src={active.media?.detail ?? active.media?.hero}
-              alt={active.name}
-              tone={active.tone}
-              small
-            />
-            <p className="eyebrow">{active.type}</p>
-            <h3>{active.name}</h3>
-            <strong>{active.price}</strong>
-            <p>{active.detail}</p>
-            <button
-              className="btn dark full"
-              onClick={() => {
-                trackNovaEvent("click_buy", { product: active.name, price: active.price, placement: "quick_view" });
-                window.location.assign(active.checkoutUrl || novaStoreUrl);
-              }}
+      <AnimatePresence>
+        {cartOpen ? (
+          <motion.div
+            className="bag-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setCartOpen(false)}
+          >
+            <motion.aside
+              className="bag-drawer"
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ duration: 0.28 }}
+              onClick={(event) => event.stopPropagation()}
             >
-              {t("BUY NOW","اشترِ الآن")}
-            </button>
-          </div>
-        </div>
-      )}
+              <div className="bag-header">
+                <div>
+                  <p className="section-kicker">YOUR BAG</p>
+                  <h3>{cartCount} ITEM{cartCount === 1 ? "" : "S"}</h3>
+                </div>
+                <button type="button" onClick={() => setCartOpen(false)}>×</button>
+              </div>
+
+              <div className="bag-items">
+                {cart.length ? (
+                  cart.map((product, index) => (
+                    <div className="bag-item" key={`${product.id}-${index}`}>
+                      <ProductImage src={product.media?.hero} alt={product.name} fallback={product} className="bag-thumb" />
+                      <div>
+                        <strong>{product.name}</strong>
+                        <span>{product.price}</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p>Your bag is empty. Add a NOVA watch to continue.</p>
+                )}
+              </div>
+
+              <div className="bag-footer">
+                <div>
+                  <span>ESTIMATED TOTAL</span>
+                  <strong>{cartTotal.toLocaleString()} AED</strong>
+                </div>
+                <button type="button" className="primary-cta wide" onClick={() => window.location.assign(novaStoreUrl)} disabled={!cart.length}>
+                  CONTINUE TO NOVA STORE
+                </button>
+                <small>Checkout opens the official NOVA store to complete payment securely.</small>
+              </div>
+            </motion.aside>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </main>
   );
 }
