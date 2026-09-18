@@ -21,14 +21,15 @@ jobs:
             exit 1
           fi
 
-          response="$(curl -sS -w '\n%{http_code}'             -H "Authorization: Bearer ${EASY_ORDERS_API_KEY}"             -H "Content-Type: application/json"             https://api.easy-orders.net/api/v1/external-apps/products)"
+          response="$(curl -sS -w '\n%{http_code}'             -H "Api-Key: ${EASY_ORDERS_API_KEY}"             -H "Content-Type: application/json"             https://api.easy-orders.net/api/v1/external-apps/products)"
 
           body="$(printf '%s\n' "$response" | sed '$d')"
           status="$(printf '%s\n' "$response" | tail -n1)"
 
           echo "Easy Orders HTTP status: $status"
           echo "Easy Orders response:"
-          printf '%s\n' "$body" | python -c 'import sys,json; raw=sys.stdin.read();\ntry:\n data=json.loads(raw); print(json.dumps(data, ensure_ascii=False, indent=2)[:4000])\nexcept Exception:\n print(raw[:4000])'
+          printf '%s\n' "$body" | head -c 4000
+          printf '\n'
 
           if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
             echo "Easy Orders API authentication/request failed."
