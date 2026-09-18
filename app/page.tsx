@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import {
   featureCopy,
   lifestyles,
@@ -11,10 +11,12 @@ import {
 } from "./data/products";
 
 function Watch({ tone = "ivory", small = false }: { tone?: Product["tone"]; small?: boolean }) {
+  const shouldReduceMotion = useReducedMotion();
+
   return (
     <motion.div
       className={`watch-wrap ${small ? "small" : ""} tone-${tone}`}
-      whileHover={{ rotateY: -10, rotateX: 5, scale: 1.025 }}
+      whileHover={shouldReduceMotion ? undefined : { rotateY: -10, rotateX: 5, scale: 1.025 }}
       transition={{ type: "spring", stiffness: 180, damping: 18 }}
     >
       <div className="strap top" />
@@ -77,6 +79,7 @@ export default function Home() {
   const [life, setLife] = useState<Lifestyle>("OFFICE");
   const [quickView, setQuickView] = useState(false);
   const [mediaKey, setMediaKey] = useState<"hero" | "detail" | "dial" | "wrist">("hero");
+  const shouldReduceMotion = useReducedMotion();
 
   const active = products.find((p) => p.type === style) ?? products[0];
   const activeMedia =
@@ -113,7 +116,13 @@ export default function Home() {
           </div>
         </div>
 
-        <motion.div className="hero-watch" style={{ y: heroY, rotateZ: heroRotate }}>
+        <motion.div
+          className="hero-watch"
+          style={{
+            y: shouldReduceMotion ? 0 : heroY,
+            rotateZ: shouldReduceMotion ? 0 : heroRotate,
+          }}
+        >
           <div className="orb" />
           <ProductImage
             src={products[0].media?.hero}
