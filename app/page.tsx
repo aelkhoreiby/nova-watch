@@ -11,6 +11,7 @@ const products = [
 ];
 
 const lifestyles = ["OFFICE", "NIGHT", "DATE", "TRAVEL"];
+const featureCopy = { CASE: "The silhouette defines the presence.", DIAL: "The face keeps the essentials clear.", STRAP: "The finishing detail completes the look.", FINISH: "Every surface is part of the visual language." };
 
 function Watch({ tone = "ivory", small = false }: { tone?: string; small?: boolean }) {
   return (
@@ -34,6 +35,7 @@ function Watch({ tone = "ivory", small = false }: { tone?: string; small?: boole
 
 export default function Home() {
   const [style, setStyle] = useState("CLASSIC");
+  const [feature, setFeature] = useState("CASE");
   const [life, setLife] = useState("OFFICE");
   const [quickView, setQuickView] = useState(false);
   const active = products.find(p => p.type === style) ?? products[0];
@@ -75,9 +77,9 @@ export default function Home() {
           {products.map(p => <button key={p.type} className={style === p.type ? "selected" : ""} onClick={() => setStyle(p.type)}>{p.type}</button>)}
         </div>
         <motion.div className="featured" layout>
-          <div className="featured-visual"><Watch tone={active.tone} /><div className="hotspot h1">CASE<span>Precision silhouette</span></div><div className="hotspot h2">DIAL<span>Minimal information</span></div><div className="hotspot h3">STRAP<span>Designed for comfort</span></div></div>
+          <div className="featured-visual"><Watch tone={active.tone} /><button className={`hotspot h1 ${feature==="CASE"?"active":""}`} onClick={() => setFeature("CASE")}>CASE<span>{featureCopy.CASE}</span></button><button className={`hotspot h2 ${feature==="DIAL"?"active":""}`} onClick={() => setFeature("DIAL")}>DIAL<span>{featureCopy.DIAL}</span></button><button className={`hotspot h3 ${feature==="STRAP"?"active":""}`} onClick={() => setFeature("STRAP")}>STRAP<span>{featureCopy.STRAP}</span></button><button className={`hotspot h4 ${feature==="FINISH"?"active":""}`} onClick={() => setFeature("FINISH")}>FINISH<span>{featureCopy.FINISH}</span></button></div>
           <motion.div className="featured-copy" key={active.name} initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}>
-            <p className="eyebrow">{active.type}</p><h3>{active.name}</h3><p>{active.detail}</p><div className="price">{active.price}</div>
+            <p className="eyebrow">{active.type}</p><h3>{active.name}</h3><p>{active.detail}</p><p className="feature-text">{featureCopy[feature as keyof typeof featureCopy]}</p><div className="price">{active.price}</div>
             <button className="btn dark full" onClick={() => active.checkoutUrl ? window.location.assign(active.checkoutUrl) : setQuickView(true)}>BUY NOW</button><button className="quick-link" onClick={() => setQuickView(true)}>QUICK VIEW →</button>
             <small>Demo catalog pricing — replace with your verified NOVA catalog.</small>
           </motion.div>
