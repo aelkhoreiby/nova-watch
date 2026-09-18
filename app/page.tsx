@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
@@ -120,9 +121,13 @@ export default function Home() {
     trackNovaEvent("select_product", { product: product.name, action: "add_to_bag" });
   }
 
+  function productPath(product: Product) {
+    return `/product/${encodeURIComponent(product.slug || product.id)}`;
+  }
+
   function buyNow(product: Product) {
     trackNovaEvent("click_buy", { product: product.name, price: product.price });
-    window.location.assign(product.checkoutUrl || novaStoreUrl);
+    window.location.assign(productPath(product));
   }
 
   function toggleLanguage() {
@@ -211,15 +216,30 @@ export default function Home() {
                 whileHover={reducedMotion ? undefined : { y: -8 }}
                 transition={{ duration: 0.28 }}
                 onMouseEnter={() => setActiveId(product.id)}
+                onClick={(event) => {
+                  const target = event.target as HTMLElement;
+                  if (target.closest("button") || target.closest("a")) return;
+                  window.location.assign(productPath(product));
+                }}
+                role="link"
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    window.location.assign(productPath(product));
+                  }
+                }}
               >
                 <div className="product-art">
-                  <div className="product-main-view">
+                  <Link href={productPath(product)} aria-label={`View ${product.name}`} className="product-detail-link">
+                    <div className="product-main-view">
                     <ProductImage
                       src={product.media?.hero ?? product.media?.detail}
                       alt={product.name}
                       fallback={product}
                     />
-                  </div>
+                    </div>
+                  </Link>
                   {wrist ? (
                     <div className="product-wrist-view">
                       <ProductImage src={wrist} alt={`${product.name} on wrist`} fallback={product} />
@@ -230,7 +250,7 @@ export default function Home() {
 
                 <div className="product-info">
                   <p className="product-type">{product.type}</p>
-                  <h3>{product.name}</h3>
+                  <Link href={productPath(product)} className="product-name-link"><h3>{product.name}</h3></Link>
                   <p className="product-detail">{product.detail || "Designed for the way you move."}</p>
                   <strong className="product-price">{product.price}</strong>
                   <div className="product-actions">
