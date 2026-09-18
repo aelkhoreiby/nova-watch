@@ -15,6 +15,7 @@ jobs:
       - name: Install Playwright
         run: |
           npm install
+          npm install --no-save playwright
           npx playwright install --with-deps chromium
       - name: Capture NOVA production screenshots
         run: |
