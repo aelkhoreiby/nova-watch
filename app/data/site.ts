@@ -1,4 +1,5 @@
 export const novaStoreUrl = "https://officialnovastoreuae.myeasyorders.com/";
+export const novaCatalogApiUrl = "/api/catalog";
 
 export const novaSupport = {
   email: "Info@Novawatches.com",
