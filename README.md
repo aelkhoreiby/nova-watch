@@ -61,4 +61,16 @@ NOVA now reads the public storefront catalog server-side from Easy Orders using 
 
 The Next.js route at `app/api/catalog/route.ts` normalizes Easy Orders products into the NOVA UI model, including name, price, thumbnail media and stock availability. The catalog is cached for 60 seconds to reduce API traffic while keeping storefront data fresh.
 
-Easy Orders currently returns 20 products from the connected store; the live sync handles larger catalogs through paginated requests as well. Easy Orders documents the products endpoint, `Api-Key` authentication, pagination, filtering, limits and a 40-requests-per-minute API rate limit. 
+Easy Orders currently returns 20 products from the connected store; the live sync handles larger catalogs through paginated requests as well. Easy Orders documents the products endpoint, `Api-Key` authentication, pagination, filtering, limits and a 40-requests-per-minute API rate limit.
+
+## Sales Intelligence
+
+The private `/sales` dashboard aggregates order totals, order count, units, average order value, status mix, daily revenue and product-level revenue/units.
+
+The API is exposed server-side at `/api/sales` and never returns customer details. Access requires `NOVA_SALES_DASHBOARD_TOKEN`.
+
+The sales adapter supports both Bearer and `Api-Key` authentication through:
+- `NOVA_EASY_ORDERS_ORDERS_URL`
+- `NOVA_EASY_ORDERS_AUTH_MODE`
+
+Use an EasyOrders credential with the `orders:read` permission. EasyOrders documents order retrieval and order fields including totals and cart items. The exact order-list endpoint must match the API mode available to the connected account.
