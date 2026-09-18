@@ -318,7 +318,7 @@ export default function Home() {
 
       <section className="support" id="support">
         <div>
-          <p className="eyebrow">{t("UAE {t("SUPPORT","الدعم")}","دعم الإمارات")}</p>
+          <p className="eyebrow">{t("UAE SUPPORT","دعم الإمارات")}</p>
           <h2>{t("Questions before","أسئلتك قبل")}<br /><em>{t("you order?","الطلب؟")}</em></h2>
           <p className="support-lede">{t("Delivery, payment, inspection and warranty information in one place.","معلومات التوصيل والدفع والمعاينة والضمان في مكان واحد.")}</p>
         </div>
@@ -337,7 +337,7 @@ export default function Home() {
           </details>
           <details>
             <summary>{t("How can I contact NOVA?","كيف أتواصل مع نوفا؟")}</summary>
-            <p><a href="mailto:${novaSupport.email}">{novaSupport.email}</a><br />{novaSupport.address}</p>
+            <p><a href={`mailto:${novaSupport.email}`}>{novaSupport.email}</a><br />{novaSupport.address}</p>
           </details>
         </div>
       </section>
@@ -352,13 +352,13 @@ export default function Home() {
         <div className="logo">NOVA<span>®</span></div>
         <p>TIME. YOUR WAY.</p>
         <div>
-          <a href="#support">SUPPORT</a>
-          <a href="mailto:${novaSupport.email}">{t("EMAIL","البريد")}</a>
+          <a href="#support">{t("SUPPORT","الدعم")}</a>
+          <a href={`mailto:${novaSupport.email}`}>{t("EMAIL","البريد")}</a>
           <a href={novaStoreUrl}>{t("STORE","المتجر")}</a>
         </div>
       </footer>
 
-      <a className="mobile-buy" href={novaStoreUrl} onClick={() => trackNovaEvent("open_store", { placement: "mobile" })}>SHOP NOVA</a>
+      <a className="mobile-buy" href={novaStoreUrl} onClick={() => trackNovaEvent("open_store", { placement: "mobile" })}>{t("SHOP NOVA","تسوق نوفا")}</a>
 
       {quickView && (
         <div className="modal" onClick={() => setQuickView(false)}>
