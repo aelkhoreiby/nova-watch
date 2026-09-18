@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import {
+  fallbackProduct,
   featureCopy,
   lifestyles,
-  products,
   type Lifestyle,
   type Product,
 } from "./data/products";
-import { novaService, novaStoreUrl, novaSupport } from "./data/site";
+import { novaCatalogApiUrl, novaService, novaStoreUrl, novaSupport } from "./data/site";
 import { trackNovaEvent } from "./lib/analytics";
 
 function Watch({ tone = "ivory", small = false }: { tone?: Product["tone"]; small?: boolean }) {
@@ -76,7 +76,9 @@ function ProductImage({
 }
 
 export default function Home() {
-  const [style, setStyle] = useState<Product["type"]>("CLASSIC");
+  const [catalog, setCatalog] = useState<Product[]>([]);
+  const [catalogError, setCatalogError] = useState(false);
+  const [style, setStyle] = useState<string>("");
   const [feature, setFeature] = useState<keyof typeof featureCopy>("CASE");
   const [life, setLife] = useState<Lifestyle>("OFFICE");
   const [quickView, setQuickView] = useState(false);
@@ -92,9 +94,35 @@ export default function Home() {
 
   useEffect(() => {
     trackNovaEvent("view_content", { page: "home" });
+
+    let cancelled = false;
+
+    fetch(novaCatalogApiUrl, { cache: "no-store" })
+      .then((response) => {
+        if (!response.ok) throw new Error("Catalog request failed");
+        return response.json();
+      })
+      .then((payload: { products?: Product[] }) => {
+        if (cancelled) return;
+        const nextProducts = Array.isArray(payload.products) ? payload.products : [];
+        setCatalog(nextProducts);
+        setStyle(nextProducts[0]?.id ?? "");
+        setCatalogError(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setCatalogError(true);
+        setCatalog([]);
+        setStyle("");
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const active = products.find((p) => p.type === style) ?? products[0];
+  const products = catalog.length ? catalog : [fallbackProduct];
+  const active = products.find((p) => p.id === style) ?? products[0];
   const activeMedia =
     active.media?.[mediaKey] ??
     active.media?.hero ??
@@ -149,7 +177,7 @@ export default function Home() {
             tone={products[0].tone}
             eager
           />
-          <div className="floating-label l1">01 / {t("SIGNATURE FORM","هوية التصميم")}</div>
+          <div className="floating-label l1">01 / {t("LIVE CATALOG","كتالوج مباشر")}</div>
           <div className="floating-label l2">{t("MADE FOR THE MOMENT","مصممة للحظة")}</div>
         </motion.div>
       </section>
@@ -180,18 +208,25 @@ export default function Home() {
           <p>{t("Move through the collection. Hover the watch. Change the context.","تنقل بين المجموعة. حرّك مؤشر الفأرة فوق الساعة وغيّر السياق.")}</p>
         </div>
 
+        <div className="catalog-status" role="status">
+          <span className={catalogError ? "status-dot offline" : "status-dot"} />
+          {catalogError
+            ? t("Live catalog is temporarily unavailable.","الكتالوج المباشر غير متاح مؤقتًا.")
+            : t("Live catalog · synced from Easy Orders","كتالوج مباشر · متزامن مع Easy Orders")}
+        </div>
+
         <div className="selector-row">
           {products.map((p) => (
             <button
-              key={p.type}
-              className={style === p.type ? "selected" : ""}
+              key={p.id}
+              className={style === p.id ? "selected" : ""}
               onClick={() => {
-                setStyle(p.type);
+                setStyle(p.id);
                 setMediaKey("hero");
                 trackNovaEvent("select_product", { product: p.name, type: p.type });
               }}
             >
-              {p.type}
+              {p.name}
             </button>
           ))}
         </div>
@@ -256,7 +291,11 @@ export default function Home() {
               trackNovaEvent("open_quick_view", { product: active.name });
             }}>{t("QUICK VIEW →","عرض سريع ←")}</button>
 
-            <small>{t("Demo catalog pricing — replace with your verified NOVA catalog.","الأسعار الحالية تجريبية — استبدلها بكتالوج نوفا الفعلي المعتمد.")}</small>
+            <small>
+              {active.available === false
+                ? t("Currently unavailable.","غير متاح حاليًا.")
+                : t("Live catalog data from Easy Orders.","بيانات الكتالوج المباشرة من Easy Orders.")}
+            </small>
           </motion.div>
         </motion.div>
       </section>
