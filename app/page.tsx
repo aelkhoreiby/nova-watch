@@ -35,6 +35,7 @@ function Watch({ tone = "ivory", small = false }: { tone?: string; small?: boole
 export default function Home() {
   const [style, setStyle] = useState("CLASSIC");
   const [life, setLife] = useState("OFFICE");
+  const [quickView, setQuickView] = useState(false);
   const active = products.find(p => p.type === style) ?? products[0];
   const { scrollYProgress } = useScroll();
   const heroY = useTransform(scrollYProgress, [0, .35], [0, 130]);
@@ -77,7 +78,7 @@ export default function Home() {
           <div className="featured-visual"><Watch tone={active.tone} /><div className="hotspot h1">CASE<span>Precision silhouette</span></div><div className="hotspot h2">DIAL<span>Minimal information</span></div><div className="hotspot h3">STRAP<span>Designed for comfort</span></div></div>
           <motion.div className="featured-copy" key={active.name} initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}>
             <p className="eyebrow">{active.type}</p><h3>{active.name}</h3><p>{active.detail}</p><div className="price">{active.price}</div>
-            <a className="btn dark full" href={active.checkoutUrl || "#contact"}>{active.checkoutUrl ? "BUY NOW" : "BUY NOW · COMING NEXT"}</a>
+            <button className="btn dark full" onClick={() => active.checkoutUrl ? window.location.assign(active.checkoutUrl) : setQuickView(true)}>BUY NOW</button><button className="quick-link" onClick={() => setQuickView(true)}>QUICK VIEW →</button>
             <small>Demo catalog pricing — replace with your verified NOVA catalog.</small>
           </motion.div>
         </motion.div>
@@ -89,12 +90,15 @@ export default function Home() {
         <div className="life-tabs">{lifestyles.map(x => <button key={x} className={life === x ? "selected" : ""} onClick={() => setLife(x)}>{x}</button>)}</div>
       </section>
 
+      <section className="motion-band"><p className="eyebrow">WATCH IN MOTION</p><div className="motion-word"><span>FORM</span><span>LIGHT</span><span>MOTION</span><span>TIME</span></div></section>
+
       <section className="cta">
         <p className="eyebrow">NOVA / UAE</p><h2>Find the time<br/><em>that feels like you.</em></h2><a className="btn light" href="#collection">SHOP NOVA</a>
       </section>
 
       <footer id="contact"><div className="logo">NOVA<span>®</span></div><p>TIME. YOUR WAY.</p><div><span>UAE DELIVERY</span><span>SUPPORT</span><span>INSTAGRAM</span></div></footer>
       <a className="mobile-buy" href="#collection">SHOP NOVA</a>
+      {quickView && <div className="modal" onClick={() => setQuickView(false)}><div className="modal-card" onClick={e => e.stopPropagation()}><button className="close" onClick={() => setQuickView(false)}>×</button><Watch tone={active.tone} small /><p className="eyebrow">{active.type}</p><h3>{active.name}</h3><strong>{active.price}</strong><p>{active.detail}</p><button className="btn dark full" onClick={() => setQuickView(false)}>CONTINUE</button></div></div>}
     </main>
   );
 }
