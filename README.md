@@ -63,6 +63,8 @@ The Next.js route at `app/api/catalog/route.ts` normalizes Easy Orders products 
 
 Easy Orders currently returns 20 products from the connected store; the live sync handles larger catalogs through paginated requests as well. Easy Orders documents the products endpoint, `Api-Key` authentication, pagination, filtering, limits and a 40-requests-per-minute API rate limit.
 
+<!-- Vercel deployment sync marker: 2026-09-18 -->
+
 ## Sales Intelligence
 
 The private `/sales` dashboard aggregates order totals, order count, units, average order value, status mix, daily revenue and product-level revenue/units.
