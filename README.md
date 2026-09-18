@@ -29,3 +29,6 @@ The UI now uses a typed product catalog in `app/data/products.ts` and supports r
 
 The page automatically falls back to the existing CSS watch until real verified media is added. See `public/products/README.md` for the asset naming convention.
 
+
+
+<!-- Build verification checkpoint -->
