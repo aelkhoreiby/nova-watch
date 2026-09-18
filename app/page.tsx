@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import {
   featureCopy,
@@ -9,6 +9,8 @@ import {
   type Lifestyle,
   type Product,
 } from "./data/products";
+import { novaService, novaStoreUrl, novaSupport } from "./data/site";
+import { trackNovaEvent } from "./lib/analytics";
 
 function Watch({ tone = "ivory", small = false }: { tone?: Product["tone"]; small?: boolean }) {
   const shouldReduceMotion = useReducedMotion();
@@ -79,7 +81,17 @@ export default function Home() {
   const [life, setLife] = useState<Lifestyle>("OFFICE");
   const [quickView, setQuickView] = useState(false);
   const [mediaKey, setMediaKey] = useState<"hero" | "detail" | "dial" | "wrist">("hero");
+  const [language, setLanguage] = useState<"EN" | "AR">("EN");
   const shouldReduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    document.documentElement.lang = language === "AR" ? "ar" : "en";
+    document.documentElement.dir = language === "AR" ? "rtl" : "ltr";
+  }, [language]);
+
+  useEffect(() => {
+    trackNovaEvent("view_content", { page: "home" });
+  }, []);
 
   const active = products.find((p) => p.type === style) ?? products[0];
   const activeMedia =
@@ -100,7 +112,12 @@ export default function Home() {
           <a href="#story">THE IDEA</a>
           <a href="#contact">CONTACT</a>
         </div>
-        <button className="navbag">BAG <span>0</span></button>
+        <div className="nav-actions">
+          <a className="nav-shop" href={novaStoreUrl} onClick={() => trackNovaEvent("open_store", { placement: "nav" })}>SHOP</a>
+          <button className="language-toggle" type="button" onClick={() => setLanguage(language === "EN" ? "AR" : "EN")} aria-label="Switch language">
+            {language === "EN" ? "AR" : "EN"}
+          </button>
+        </div>
       </nav>
 
       <section className="hero">
@@ -113,6 +130,7 @@ export default function Home() {
           <div className="hero-actions">
             <a className="btn dark" href="#collection">EXPLORE COLLECTION</a>
             <a className="text-link" href="#story">DISCOVER NOVA ↓</a>
+            <a className="text-link" href={novaStoreUrl} onClick={() => trackNovaEvent("open_store", { placement: "hero" })}>ORDER NOW ↗</a>
           </div>
         </div>
 
@@ -136,10 +154,10 @@ export default function Home() {
       </section>
 
       <section className="service-strip" aria-label="NOVA UAE service information">
-        <div><strong>24–48H</strong><span>UAE DELIVERY</span></div>
-        <div><strong>BEFORE YOU PAY</strong><span>INSPECTION AVAILABLE</span></div>
-        <div><strong>2 YEARS</strong><span>WARRANTY</span></div>
-        <div><strong>COD</strong><span>APPLE PAY · CARDS</span></div>
+        <div><strong>{novaService.delivery}</strong><span>UAE DELIVERY</span></div>
+        <div><strong>{novaService.inspection}</strong><span>INSPECTION AVAILABLE</span></div>
+        <div><strong>{novaService.warranty}</strong><span>WARRANTY</span></div>
+        <div><strong>{novaService.payment}</strong></div>
       </section>
 
       <section id="story" className="story">
@@ -169,6 +187,7 @@ export default function Home() {
               onClick={() => {
                 setStyle(p.type);
                 setMediaKey("hero");
+                trackNovaEvent("select_product", { product: p.name, type: p.type });
               }}
             >
               {p.type}
@@ -224,11 +243,17 @@ export default function Home() {
 
             <button
               className="btn dark full"
-              onClick={() => active.checkoutUrl ? window.location.assign(active.checkoutUrl) : setQuickView(true)}
+              onClick={() => {
+                trackNovaEvent("click_buy", { product: active.name, price: active.price });
+                window.location.assign(active.checkoutUrl || novaStoreUrl);
+              }}
             >
               BUY NOW
             </button>
-            <button className="quick-link" onClick={() => setQuickView(true)}>QUICK VIEW →</button>
+            <button className="quick-link" onClick={() => {
+              setQuickView(true);
+              trackNovaEvent("open_quick_view", { product: active.name });
+            }}>QUICK VIEW →</button>
 
             <small>Demo catalog pricing — replace with your verified NOVA catalog.</small>
           </motion.div>
@@ -272,7 +297,10 @@ export default function Home() {
             <button
               key={x}
               className={life === x ? "selected" : ""}
-              onClick={() => setLife(x)}
+              onClick={() => {
+                setLife(x);
+                trackNovaEvent("select_lifestyle", { product: active.name, lifestyle: x });
+              }}
             >
               {x}
             </button>
@@ -287,19 +315,49 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="support" id="support">
+        <div>
+          <p className="eyebrow">UAE SUPPORT</p>
+          <h2>Questions before<br /><em>you order?</em></h2>
+          <p className="support-lede">Delivery, payment, inspection and warranty information in one place.</p>
+        </div>
+        <div className="support-grid">
+          <details open>
+            <summary>How fast is UAE delivery?</summary>
+            <p>Typical UAE delivery is 24–48 hours.</p>
+          </details>
+          <details>
+            <summary>Can I inspect before payment?</summary>
+            <p>Yes. Inspection before payment is available on the current NOVA UAE store.</p>
+          </details>
+          <details>
+            <summary>Which payment methods are available?</summary>
+            <p>Cash on delivery, Apple Pay and cards are currently listed.</p>
+          </details>
+          <details>
+            <summary>How can I contact NOVA?</summary>
+            <p><a href="mailto:${novaSupport.email}">{novaSupport.email}</a><br />{novaSupport.address}</p>
+          </details>
+        </div>
+      </section>
+
       <section className="cta">
         <p className="eyebrow">NOVA / UAE</p>
         <h2>Find the time<br /><em>that feels like you.</em></h2>
-        <a className="btn light" href="#collection">SHOP NOVA</a>
+        <a className="btn light" href={novaStoreUrl} onClick={() => trackNovaEvent("open_store", { placement: "cta" })}>SHOP NOVA</a>
       </section>
 
       <footer id="contact">
         <div className="logo">NOVA<span>®</span></div>
         <p>TIME. YOUR WAY.</p>
-        <div><span>UAE DELIVERY</span><span>SUPPORT</span><span>INSTAGRAM</span></div>
+        <div>
+          <a href="#support">SUPPORT</a>
+          <a href="mailto:${novaSupport.email}">EMAIL</a>
+          <a href={novaStoreUrl}>STORE</a>
+        </div>
       </footer>
 
-      <a className="mobile-buy" href="#collection">SHOP NOVA</a>
+      <a className="mobile-buy" href={novaStoreUrl} onClick={() => trackNovaEvent("open_store", { placement: "mobile" })}>SHOP NOVA</a>
 
       {quickView && (
         <div className="modal" onClick={() => setQuickView(false)}>
@@ -317,9 +375,12 @@ export default function Home() {
             <p>{active.detail}</p>
             <button
               className="btn dark full"
-              onClick={() => active.checkoutUrl ? window.location.assign(active.checkoutUrl) : setQuickView(false)}
+              onClick={() => {
+                trackNovaEvent("click_buy", { product: active.name, price: active.price, placement: "quick_view" });
+                window.location.assign(active.checkoutUrl || novaStoreUrl);
+              }}
             >
-              {active.checkoutUrl ? "BUY NOW" : "CONTINUE"}
+              BUY NOW
             </button>
           </div>
         </div>
