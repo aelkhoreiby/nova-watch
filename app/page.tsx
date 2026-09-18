@@ -78,6 +78,7 @@ function ProductImage({
 export default function Home() {
   const [catalog, setCatalog] = useState<Product[]>([]);
   const [catalogError, setCatalogError] = useState(false);
+  const [catalogWarning, setCatalogWarning] = useState(false);
   const [style, setStyle] = useState<string>("");
   const [feature, setFeature] = useState<keyof typeof featureCopy>("CASE");
   const [life, setLife] = useState<Lifestyle>("OFFICE");
@@ -102,16 +103,18 @@ export default function Home() {
         if (!response.ok) throw new Error("Catalog request failed");
         return response.json();
       })
-      .then((payload: { products?: Product[] }) => {
+      .then((payload: { products?: Product[]; warning?: string }) => {
         if (cancelled) return;
         const nextProducts = Array.isArray(payload.products) ? payload.products : [];
         setCatalog(nextProducts);
         setStyle(nextProducts[0]?.id ?? "");
         setCatalogError(false);
+        setCatalogWarning(Boolean(payload.warning) && nextProducts.length === 0);
       })
       .catch(() => {
         if (cancelled) return;
         setCatalogError(true);
+        setCatalogWarning(false);
         setCatalog([]);
         setStyle("");
       });
@@ -212,7 +215,9 @@ export default function Home() {
           <span className={catalogError ? "status-dot offline" : "status-dot"} />
           {catalogError
             ? t("Live catalog is temporarily unavailable.","الكتالوج المباشر غير متاح مؤقتًا.")
-            : t("Live catalog · synced from Easy Orders","كتالوج مباشر · متزامن مع Easy Orders")}
+            : catalogWarning
+              ? t("Waiting for approved NOVA products.","في انتظار منتجات نوفا المعتمدة.")
+              : t("Live catalog · synced from Easy Orders","كتالوج مباشر · متزامن مع Easy Orders")}
         </div>
 
         <div className="selector-row">
