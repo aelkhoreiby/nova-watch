@@ -1,0 +1,41 @@
+name: NOVA Visual Check
+
+on:
+  pull_request:
+
+jobs:
+  visual:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        run: |
+          npm install
+          npx playwright install --with-deps chromium
+      - name: Capture NOVA production screenshots
+        run: |
+          mkdir -p visual
+          node <<'NODE'
+          const { chromium } = require("playwright");
+          (async () => {
+            const browser = await chromium.launch({headless:true});
+            const page = await browser.newPage({viewport:{width:1440,height:900}, deviceScaleFactor:1});
+            const url = "https://nova-n-7de0.vercel.app/";
+            await page.goto(url, {waitUntil:"networkidle", timeout:60000});
+            await page.screenshot({path:"visual/nova-desktop.png", fullPage:true});
+            await page.setViewportSize({width:390,height:844});
+            await page.goto(url, {waitUntil:"networkidle", timeout:60000});
+            await page.screenshot({path:"visual/nova-mobile.png", fullPage:true});
+            console.log("Captured", await page.title());
+            await browser.close();
+          })().catch(err => { console.error(err); process.exit(1); });
+          NODE
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: nova-visual-screenshots
+          path: visual/
