@@ -1,0 +1,45 @@
+name: NOVA Production Visual QA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  visual:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies and Playwright
+        run: |
+          npm install
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Capture production screenshots
+        run: |
+          mkdir -p visual
+          node <<'NODE'
+          const { chromium } = require("playwright");
+          (async () => {
+            const browser = await chromium.launch({headless:true});
+            const page = await browser.newPage({viewport:{width:1440,height:900}, deviceScaleFactor:1});
+            const url = "https://nova-ochre-omega.vercel.app/";
+            await page.goto(url, {waitUntil:"networkidle", timeout:60000});
+            await page.screenshot({path:"visual/nova-production-desktop.png", fullPage:true});
+            await page.setViewportSize({width:390,height:844});
+            await page.goto(url, {waitUntil:"networkidle", timeout:60000});
+            await page.screenshot({path:"visual/nova-production-mobile.png", fullPage:true});
+            console.log("Production title:", await page.title());
+            console.log("Production URL:", page.url());
+            await browser.close();
+          })().catch(err => { console.error(err); process.exit(1); });
+          NODE
+      - name: Upload production screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: nova-production-visual
+          path: visual/
