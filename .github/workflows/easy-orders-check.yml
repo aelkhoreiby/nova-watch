@@ -21,7 +21,7 @@ jobs:
             exit 1
           fi
 
-          response="$(curl -sS -w '\n%{http_code}'             -H "Api-Key: ${EASY_ORDERS_API_KEY}"             -H "Content-Type: application/json"             https://api.easy-orders.net/api/v1/external-apps/products)"
+          response="$(curl -sS -w '\n%{http_code}'             -H "Api-Key: ${EASY_ORDERS_API_KEY}"             -H "Content-Type: application/json"             https://api.easy-orders.net/api/v1/external-apps/products?page=1&limit=100&fields=id,name,price,sale_price,description,slug,thumb,images,quantity,track_stock,hidden,disable_orders_for_no_stock,custom_currency,position&join=Variations.Props,Variants.VariationProps)"
 
           body="$(printf '%s\n' "$response" | sed '$d')"
           status="$(printf '%s\n' "$response" | tail -n1)"
