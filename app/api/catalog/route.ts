@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import catalogSnapshot from "../../../public/catalog.json";
 
 export const revalidate = 60;
 
@@ -27,6 +28,10 @@ type EasyOrdersProduct = {
   custom_currency?: string;
   position?: number;
 };
+
+const LOCAL_CATALOG = Array.isArray(catalogSnapshot)
+  ? (catalogSnapshot as EasyOrdersProduct[])
+  : [];
 
 function cleanText(value: unknown) {
   if (typeof value !== "string") return "";
@@ -70,7 +75,7 @@ function normalizeProduct(product: EasyOrdersProduct) {
     : !product.disable_orders_for_no_stock;
 
   return {
-    id: String(product.id ?? product.slug ?? product.name ?? Math.random()),
+    id: String(product.id ?? product.slug ?? product.name ?? "product"),
     name: product.name?.trim() || "NOVA",
     type: "NOVA",
     price: money(price, currency),
@@ -92,14 +97,46 @@ function normalizeProduct(product: EasyOrdersProduct) {
   };
 }
 
-export async function GET() {
-  if (!EASY_ORDERS_KEY) {
-    return NextResponse.json(
-      { ok: false, error: "NOVA_EASY_ORDERS_API_KEY is not configured.", products: [] },
-      { status: 503 }
-    );
+function approvedProducts(products: EasyOrdersProduct[]) {
+  const visible = products.filter((product) => !product.hidden);
+
+  if (APPROVED_PRODUCT_IDS.size === 0) {
+    return visible;
   }
 
+  return visible.filter((product) => APPROVED_PRODUCT_IDS.has(String(product.id)));
+}
+
+function responseFromCatalog(
+  products: EasyOrdersProduct[],
+  source: "easy-orders" | "easy-orders-snapshot",
+) {
+  const normalized = approvedProducts(products)
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+    .map(normalizeProduct);
+
+  return NextResponse.json(
+    {
+      ok: true,
+      source,
+      syncedAt: new Date().toISOString(),
+      count: normalized.length,
+      sourceCount: products.length,
+      approvalMode: APPROVED_PRODUCT_IDS.size > 0 ? "ids" : "all-visible-products",
+      warning: normalized.length === 0
+        ? "No products are available in the NOVA catalog snapshot."
+        : undefined,
+      products: normalized,
+    },
+    {
+      headers: {
+        "Cache-Control": "private, max-age=60, stale-while-revalidate=300",
+      },
+    },
+  );
+}
+
+async function fetchLiveCatalog() {
   const products: EasyOrdersProduct[] = [];
   const limit = 100;
 
@@ -109,14 +146,14 @@ export async function GET() {
     url.searchParams.set("limit", String(limit));
     url.searchParams.set(
       "fields",
-      "id,name,price,sale_price,description,slug,thumb,images,quantity,track_stock,hidden,disable_orders_for_no_stock,custom_currency,position"
+      "id,name,price,sale_price,description,slug,thumb,images,quantity,track_stock,hidden,disable_orders_for_no_stock,custom_currency,position",
     );
     url.searchParams.set("join", "Variations.Props,Variants.VariationProps");
 
     const response = await fetch(url, {
       method: "GET",
       headers: {
-        "Api-Key": EASY_ORDERS_KEY,
+        "Api-Key": EASY_ORDERS_KEY as string,
         "Content-Type": "application/json",
       },
       next: { revalidate: 60 },
@@ -124,10 +161,7 @@ export async function GET() {
 
     if (!response.ok) {
       const body = await response.text();
-      return NextResponse.json(
-        { ok: false, error: "Easy Orders catalog request failed.", status: response.status, details: body.slice(0, 500), products: [] },
-        { status: 502 }
-      );
+      throw new Error(`Easy Orders catalog request failed: ${response.status} ${body.slice(0, 300)}`);
     }
 
     const payload = await response.json();
@@ -144,35 +178,18 @@ export async function GET() {
     if (batch.length < limit) break;
   }
 
-  const approvedProducts = products.filter((product) => {
-    if (product.hidden) return false;
+  return products;
+}
 
-    if (APPROVED_PRODUCT_IDS.size > 0) {
-      return APPROVED_PRODUCT_IDS.has(String(product.id));
-    }
+export async function GET() {
+  if (!EASY_ORDERS_KEY) {
+    return responseFromCatalog(LOCAL_CATALOG, "easy-orders-snapshot");
+  }
 
-    const identity = `${product.name || ""} ${product.slug || ""}`.toLowerCase();
-    return identity.includes("nova");
-  });
-
-  const normalized = approvedProducts
-    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
-    .map(normalizeProduct);
-
-  return NextResponse.json({
-    ok: true,
-    source: "easy-orders",
-    syncedAt: new Date().toISOString(),
-    count: normalized.length,
-    sourceCount: products.length,
-    approvalMode: APPROVED_PRODUCT_IDS.size > 0 ? "ids" : "nova-name-or-slug",
-    warning: normalized.length === 0
-      ? "No approved NOVA products were found in the Easy Orders catalog."
-      : undefined,
-    products: normalized,
-  }, {
-    headers: {
-      "Cache-Control": "private, max-age=60, stale-while-revalidate=300",
-    },
-  });
+  try {
+    const products = await fetchLiveCatalog();
+    return responseFromCatalog(products, "easy-orders");
+  } catch {
+    return responseFromCatalog(LOCAL_CATALOG, "easy-orders-snapshot");
+  }
 }
