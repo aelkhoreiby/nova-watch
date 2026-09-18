@@ -27,6 +27,8 @@ jobs:
           status="$(printf '%s\n' "$response" | tail -n1)"
 
           echo "Easy Orders HTTP status: $status"
+          echo "Easy Orders response:"
+          printf '%s\n' "$body" | python -c 'import sys,json; raw=sys.stdin.read();\ntry:\n data=json.loads(raw); print(json.dumps(data, ensure_ascii=False, indent=2)[:4000])\nexcept Exception:\n print(raw[:4000])'
 
           if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
             echo "Easy Orders API authentication/request failed."
