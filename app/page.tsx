@@ -76,8 +76,13 @@ export default function Home() {
   const [feature, setFeature] = useState<keyof typeof featureCopy>("CASE");
   const [life, setLife] = useState<Lifestyle>("OFFICE");
   const [quickView, setQuickView] = useState(false);
+  const [mediaKey, setMediaKey] = useState<"hero" | "detail" | "dial" | "wrist">("hero");
 
   const active = products.find((p) => p.type === style) ?? products[0];
+  const activeMedia =
+    active.media?.[mediaKey] ??
+    active.media?.hero ??
+    active.media?.detail;
   const activeLife = active.media?.lifestyle?.[life];
   const { scrollYProgress } = useScroll();
   const heroY = useTransform(scrollYProgress, [0, 0.35], [0, 130]);
@@ -152,7 +157,10 @@ export default function Home() {
             <button
               key={p.type}
               className={style === p.type ? "selected" : ""}
-              onClick={() => setStyle(p.type)}
+              onClick={() => {
+                setStyle(p.type);
+                setMediaKey("hero");
+              }}
             >
               {p.type}
             </button>
@@ -162,10 +170,23 @@ export default function Home() {
         <motion.div className="featured" layout>
           <div className="featured-visual">
             <ProductImage
-              src={active.media?.hero}
+              src={activeMedia}
               alt={active.name}
               tone={active.tone}
             />
+            <div className="media-thumbs" aria-label="Product views">
+              {(["hero", "detail", "dial", "wrist"] as const).map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={mediaKey === key ? "selected" : ""}
+                  onClick={() => setMediaKey(key)}
+                  disabled={!active.media?.[key]}
+                >
+                  {key.toUpperCase()}
+                </button>
+              ))}
+            </div>
             <button className={`hotspot h1 ${feature === "CASE" ? "active" : ""}`} onClick={() => setFeature("CASE")}>
               CASE<span>{featureCopy.CASE}</span>
             </button>
