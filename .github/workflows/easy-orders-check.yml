@@ -21,7 +21,7 @@ jobs:
             exit 1
           fi
 
-          response="$(curl -sS -w '\n%{http_code}'             -H "Authorization: Bearer ${EASY_ORDERS_API_KEY}"             -H "Content-Type: application/json"             https://api.easy-orders.net/v1/products)"
+          response="$(curl -sS -w '\n%{http_code}'             -H "Authorization: Bearer ${EASY_ORDERS_API_KEY}"             -H "Content-Type: application/json"             https://api.easy-orders.net/api/v1/external-apps/products)"
 
           body="$(printf '%s\n' "$response" | sed '$d')"
           status="$(printf '%s\n' "$response" | tail -n1)"
