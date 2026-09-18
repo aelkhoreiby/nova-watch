@@ -53,3 +53,12 @@ These are intentionally left data-driven rather than invented:
 5. Connect the final NOVA domain and run mobile/browser QA.
 
 The frontend is ready for those real assets and catalog inputs without changing the interaction architecture.
+
+
+## Live Easy Orders Product Sync
+
+NOVA now reads the public storefront catalog server-side from Easy Orders using the repository secret `NOVA_EASY_ORDERS_API_KEY`. The browser never receives the API key.
+
+The Next.js route at `app/api/catalog/route.ts` normalizes Easy Orders products into the NOVA UI model, including name, price, thumbnail media and stock availability. The catalog is cached for 60 seconds to reduce API traffic while keeping storefront data fresh.
+
+Easy Orders currently returns 20 products from the connected store; the live sync handles larger catalogs through paginated requests as well. Easy Orders documents the products endpoint, `Api-Key` authentication, pagination, filtering, limits and a 40-requests-per-minute API rate limit. 
