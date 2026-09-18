@@ -51,4 +51,4 @@ jobs:
             printf '%s' "$detail_body" | python -c 'import json,sys; data=json.load(sys.stdin); print("Single-product keys:", ", ".join(sorted(data.keys())) if isinstance(data,dict) else type(data).__name__)'
           fi
 
-          printf '%s' "$body" | python -c 'import json,sys; data=json.load(sys.stdin); items=data if isinstance(data,list) else data.get("data",data.get("products",[])); print("Products endpoint returned JSON successfully."); print("Product count:", len(items) if isinstance(items,list) else "unknown"); print("First product keys:", ", ".join(sorted(items[0].keys())) if isinstance(items,list) and items else "none")'
+          printf '%s' "$body" | python -c 'import json,sys; data=json.load(sys.stdin); items=data if isinstance(data,list) else data.get("data",data.get("products",[])); print("Products endpoint returned JSON successfully."); print("Product count:", len(items) if isinstance(items,list) else "unknown"); print("Catalog names:"); [print(f"{i+1}. {x.get('name','')} | {x.get('slug','')}") for i,x in enumerate(items)]'
