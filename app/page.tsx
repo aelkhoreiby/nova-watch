@@ -121,6 +121,13 @@ export default function Home() {
         </motion.div>
       </section>
 
+      <section className="service-strip" aria-label="NOVA UAE service information">
+        <div><strong>24–48H</strong><span>UAE DELIVERY</span></div>
+        <div><strong>BEFORE YOU PAY</strong><span>INSPECTION AVAILABLE</span></div>
+        <div><strong>2 YEARS</strong><span>WARRANTY</span></div>
+        <div><strong>COD</strong><span>APPLE PAY · CARDS</span></div>
+      </section>
+
       <section id="story" className="story">
         <div>
           <p className="eyebrow">THE NOVA IDEA</p>
