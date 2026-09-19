@@ -2,6 +2,8 @@ name: Sync NOVA catalog from Easy Orders
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "17 * * * *"
   push:
     branches: [main]
     paths-ignore:
@@ -9,6 +11,10 @@ on:
 
 permissions:
   contents: write
+
+concurrency:
+  group: nova-catalog-sync
+  cancel-in-progress: true
 
 jobs:
   sync:
