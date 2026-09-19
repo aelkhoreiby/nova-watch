@@ -1,45 +1,91 @@
-name: NOVA Production Visual QA
+name: NOVA Visual QA
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
 
+concurrency:
+  group: nova-visual-qa-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   visual:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Install dependencies and Playwright
+
+      - name: Install dependencies
         run: |
           npm install
           npm install --no-save playwright
           npx playwright install --with-deps chromium
-      - name: Capture production screenshots
+
+      - name: Build current source
+        run: npm run build
+
+      - name: Start current source
+        run: |
+          nohup npm start > /tmp/nova-next.log 2>&1 &
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:3000/ >/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:3000/ >/dev/null
+
+      - name: Capture desktop and mobile QA
         run: |
           mkdir -p visual
           node <<'NODE'
           const { chromium } = require("playwright");
           (async () => {
-            const browser = await chromium.launch({headless:true});
-            const page = await browser.newPage({viewport:{width:1440,height:900}, deviceScaleFactor:1});
-            const url = "https://nova-ochre-omega.vercel.app/";
-            await page.goto(url, {waitUntil:"networkidle", timeout:60000});
-            await page.screenshot({path:"visual/nova-production-desktop.png", fullPage:true});
-            await page.setViewportSize({width:390,height:844});
-            await page.goto(url, {waitUntil:"networkidle", timeout:60000});
-            await page.screenshot({path:"visual/nova-production-mobile.png", fullPage:true});
-            console.log("Production title:", await page.title());
-            console.log("Production URL:", page.url());
+            const browser = await chromium.launch({ headless: true });
+
+            const desktop = await browser.newPage({
+              viewport: { width: 1440, height: 900 },
+              deviceScaleFactor: 1,
+            });
+            await desktop.goto("http://127.0.0.1:3000/", { waitUntil: "networkidle", timeout: 60000 });
+            await desktop.screenshot({ path: "visual/nova-local-desktop.png", fullPage: true });
+            console.log("Desktop title:", await desktop.title());
+
+            const mobile = await browser.newPage({
+              viewport: { width: 390, height: 844 },
+              deviceScaleFactor: 1,
+            });
+            await mobile.goto("http://127.0.0.1:3000/", { waitUntil: "networkidle", timeout: 60000 });
+            await mobile.screenshot({ path: "visual/nova-local-mobile.png", fullPage: true });
+
+            const catalog = await mobile.request.get("http://127.0.0.1:3000/api/catalog");
+            if (!catalog.ok()) throw new Error("Catalog endpoint returned HTTP " + catalog.status());
+            const payload = await catalog.json();
+            if (!payload.ok || !Array.isArray(payload.products) || payload.products.length === 0) {
+              throw new Error("Catalog endpoint did not return products.");
+            }
+            console.log("Catalog products:", payload.products.length);
+
+            const first = payload.products[0];
+            const slug = first.slug || first.id;
+            const product = await mobile.request.get("http://127.0.0.1:3000/product/" + encodeURIComponent(slug));
+            if (!product.ok()) throw new Error("Product page returned HTTP " + product.status());
+            console.log("Product route:", "/product/" + slug);
+
             await browser.close();
-          })().catch(err => { console.error(err); process.exit(1); });
+          })().catch(err => {
+            console.error(err);
+            process.exit(1);
+          });
           NODE
-      - name: Upload production screenshots
+
+      - name: Upload QA screenshots
         uses: actions/upload-artifact@v4
         with:
-          name: nova-production-visual
+          name: nova-visual-qa
           path: visual/
