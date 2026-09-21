@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
+import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -52,6 +53,7 @@ fbq('track', 'PageView');`}
           </Script>
         ) : null}
         {children}
+        <Analytics />
       </body>
     </html>
   );
