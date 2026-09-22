@@ -1,5 +1,39 @@
 {
-  "status": "no-zip",
-  "inbox": ".",
-  "archives": []
+  "status": "analyzed",
+  "inbox": "C:\\Users\\Beta3 Labat\\Desktop\\NOVA Products",
+  "archives": [
+    {
+      "file": "WhatsApp Unknown 2026-09-22 at 10.36.00 PM.zip",
+      "size_bytes": 13996161,
+      "sha256": "c8b1c878bc2254d35d458977779c874dc8455b1b0d6f298a6b78be5cffac6bfc",
+      "entries": [
+        {
+          "path": "WhatsApp Image 2026-09-12 at 2.14.35 PM.jpeg",
+          "size_bytes": 1559136,
+          "type": "image"
+        },
+        {
+          "path": "WhatsApp Video 2026-09-12 at 2.14.40 PM.mp4",
+          "size_bytes": 5075925,
+          "type": "video"
+        },
+        {
+          "path": "WhatsApp Image 2026-09-12 at 2.14.40 PM.jpeg",
+          "size_bytes": 1560181,
+          "type": "image"
+        },
+        {
+          "path": "WhatsApp Video 2026-09-12 at 2.14.47 PM.mp4",
+          "size_bytes": 5800245,
+          "type": "video"
+        }
+      ],
+      "entry_count": 4,
+      "types": {
+        "image": 2,
+        "video": 2
+      },
+      "product_candidates": []
+    }
+  ]
 }
