@@ -15,7 +15,7 @@ permissions:
 
 concurrency:
   group: nova-product-inbox
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   ingest:
