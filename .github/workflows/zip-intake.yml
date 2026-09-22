@@ -1,0 +1,49 @@
+name: NOVA ZIP Intake Only
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/nova_zip_intake.py"
+      - ".github/workflows/zip-intake.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nova-zip-intake
+  cancel-in-progress: true
+
+jobs:
+  intake:
+    runs-on: [self-hosted, nova-local]
+    env:
+      NOVA_PRODUCT_INBOX: ${{ vars.NOVA_PRODUCT_INBOX }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Analyze ZIP from Desktop inbox
+        shell: python
+        run: python scripts/nova_zip_intake.py
+      - name: Commit intake report
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require("fs");
+            const path = "product-queue/intake-report.json";
+            if (!fs.existsSync(path)) return;
+            const owner = context.repo.owner, repo = context.repo.repo;
+            let sha = null;
+            try {
+              const existing = await github.rest.repos.getContent({owner,repo,path,ref:"main"});
+              if (!Array.isArray(existing.data)) sha = existing.data.sha;
+            } catch (e) { if (e.status !== 404) throw e; }
+            const content = fs.readFileSync(path).toString("base64");
+            await github.rest.repos.createOrUpdateFileContents({
+              owner,repo,path,branch:"main",
+              message:"Record NOVA ZIP intake analysis",
+              content,
+              ...(sha ? {sha} : {})
+            });
