@@ -19,7 +19,7 @@ jobs:
   intake:
     runs-on: [self-hosted, nova-local]
     env:
-      NOVA_PRODUCT_INBOX: ${{ vars.NOVA_PRODUCT_INBOX }}
+      NOVA_PRODUCT_INBOX: C:\Users\Beta3 Labat\Desktop\NOVA Products
     steps:
       - uses: actions/checkout@v4
         with:
