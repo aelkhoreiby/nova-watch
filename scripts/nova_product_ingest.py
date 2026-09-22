@@ -51,7 +51,7 @@ RAW_BASE = os.environ.get(
     f"https://raw.githubusercontent.com/{REPO}/{BRANCH}/public/products/incoming",
 )
 DEFAULT_INBOX = (Path(os.environ.get("USERPROFILE", str(Path.home()))) / "Desktop" / "NOVA Products") if os.name == "nt" else (Path.home() / "Desktop" / "NOVA Products")
-INBOX = Path(os.environ.get("NOVA_PRODUCT_INBOX", str(DEFAULT_INBOX))).expanduser()
+INBOX = Path((os.environ.get("NOVA_PRODUCT_INBOX") or str(DEFAULT_INBOX))).expanduser()
 PROCESSED = INBOX / "Processed"
 NEEDS_INFO = INBOX / "Needs-Info"
 QUEUE_DIR = Path("product-queue")
