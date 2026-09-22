@@ -25,6 +25,7 @@ jobs:
       NOVA_EASY_ORDERS_API_KEY: ${{ secrets.NOVA_EASY_ORDERS_API_KEY }}
       NOVA_PRODUCT_INBOX: ${{ vars.NOVA_PRODUCT_INBOX }}
       NOVA_PUBLIC_IMAGE_BASE: https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/public/products/incoming
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -44,38 +45,146 @@ jobs:
       - name: Stage new products
         shell: python
         run: |
+          import hashlib
+          import json
           import subprocess
+          from pathlib import Path
+
+          roots = [Path("public/products/incoming"), Path("product-queue")]
+
+          def snapshot():
+              state = {}
+              for root in roots:
+                  if not root.exists():
+                      continue
+                  for path in root.rglob("*"):
+                      if path.is_file():
+                          state[str(path).replace("\\", "/")] = hashlib.sha256(path.read_bytes()).hexdigest()
+              return state
+
+          before = snapshot()
           subprocess.run(["python", "scripts/nova_product_ingest.py", "scan"], check=True)
-          subprocess.run(["git", "status", "--short"], check=True)
+          after = snapshot()
+          changed = sorted(path for path, digest in after.items() if before.get(path) != digest)
+          Path(".nova-upload-list.json").write_text(
+              json.dumps(changed, indent=2),
+              encoding="utf-8",
+          )
+          print(f"Changed paths: {changed}")
 
       - name: Commit staged media and manifests
-        shell: python
-        run: |
-          import subprocess
-          subprocess.run(["git", "config", "user.name", "NOVA Product Bot"], check=True)
-          subprocess.run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], check=True)
-          subprocess.run(["git", "add", "public/products/incoming", "product-queue"], check=True)
-          diff = subprocess.run(["git", "diff", "--cached", "--quiet"])
-          if diff.returncode == 0:
-              print("No staged product changes.")
-          else:
-              subprocess.run(["git", "commit", "-m", "Stage NOVA product media"], check=True)
-              subprocess.run(["git", "push", "origin", "HEAD:main"], check=True)
+        uses: actions/github-script@v8
+        env:
+          UPLOAD_LIST: .nova-upload-list.json
+        with:
+          script: |
+            const fs = require("fs");
+            const path = require("path");
+
+            const list = JSON.parse(fs.readFileSync(process.env.UPLOAD_LIST, "utf8"));
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const ordered = [...list].sort((a, b) => {
+              const am = a.startsWith("public/products/incoming/") ? 0 : 1;
+              const bm = b.startsWith("public/products/incoming/") ? 0 : 1;
+              return am - bm || a.localeCompare(b);
+            });
+
+            for (const filePath of ordered) {
+              const bytes = fs.readFileSync(filePath);
+              let sha;
+              try {
+                const existing = await github.rest.repos.getContent({
+                  owner,
+                  repo,
+                  path: filePath,
+                  ref: "main"
+                });
+                if (!Array.isArray(existing.data)) sha = existing.data.sha;
+              } catch (error) {
+                if (error.status !== 404) throw error;
+              }
+
+              await github.rest.repos.createOrUpdateFileContents({
+                owner,
+                repo,
+                path: filePath,
+                message: "Stage NOVA product media",
+                content: bytes.toString("base64"),
+                branch: "main",
+                ...(sha ? { sha } : {})
+              });
+
+              core.info(`Uploaded ${filePath}`);
+            }
+
+            core.info(ordered.length ? `Uploaded ${ordered.length} staged file(s).` : "No staged files to upload.");
 
       - name: Publish staged products to EasyOrders
         shell: python
         run: |
+          import hashlib
+          import json
           import subprocess
+          from pathlib import Path
+
+          root = Path("product-queue")
+          before = {}
+          if root.exists():
+              for path in root.glob("*.json"):
+                  before[str(path).replace("\\", "/")] = hashlib.sha256(path.read_bytes()).hexdigest()
+
           subprocess.run(["python", "scripts/nova_product_ingest.py", "publish"], check=True)
 
+          after = {}
+          if root.exists():
+              for path in root.glob("*.json"):
+                  after[str(path).replace("\\", "/")] = hashlib.sha256(path.read_bytes()).hexdigest()
+
+          changed = sorted(path for path, digest in after.items() if before.get(path) != digest)
+          Path(".nova-publish-list.json").write_text(
+              json.dumps(changed, indent=2),
+              encoding="utf-8",
+          )
+          print(f"Publish-result paths: {changed}")
+
       - name: Commit publish results
-        shell: python
-        run: |
-          import subprocess
-          subprocess.run(["git", "config", "user.name", "NOVA Product Bot"], check=True)
-          subprocess.run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], check=True)
-          subprocess.run(["git", "add", "product-queue"], check=True)
-          diff = subprocess.run(["git", "diff", "--cached", "--quiet"])
-          if diff.returncode != 0:
-              subprocess.run(["git", "commit", "-m", "Record NOVA EasyOrders product publish"], check=True)
-              subprocess.run(["git", "push", "origin", "HEAD:main"], check=True)
+        uses: actions/github-script@v8
+        env:
+          UPLOAD_LIST: .nova-publish-list.json
+        with:
+          script: |
+            const fs = require("fs");
+
+            const list = JSON.parse(fs.readFileSync(process.env.UPLOAD_LIST, "utf8"));
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            for (const filePath of list) {
+              const bytes = fs.readFileSync(filePath);
+              const existing = await github.rest.repos.getContent({
+                owner,
+                repo,
+                path: filePath,
+                ref: "main"
+              });
+
+              if (Array.isArray(existing.data)) {
+                throw new Error(`Expected file but got directory: ${filePath}`);
+              }
+
+              await github.rest.repos.createOrUpdateFileContents({
+                owner,
+                repo,
+                path: filePath,
+                message: "Record NOVA EasyOrders product publish",
+                content: bytes.toString("base64"),
+                branch: "main",
+                sha: existing.data.sha
+              });
+
+              core.info(`Updated ${filePath}`);
+            }
+
+            core.info(list.length ? `Recorded ${list.length} publish result file(s).` : "No publish result changes.");
