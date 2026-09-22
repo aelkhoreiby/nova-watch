@@ -76,3 +76,10 @@ The sales adapter supports both Bearer and `Api-Key` authentication through:
 - `NOVA_EASY_ORDERS_AUTH_MODE`
 
 Use an EasyOrders credential with the `orders:read` permission. EasyOrders documents order retrieval and order fields including totals and cart items. The exact order-list endpoint must match the API mode available to the connected account.
+
+
+## Automated Desktop Product Inbox
+
+The local self-hosted `nova-local` runner supports a Desktop product inbox. The default folder is `~/Desktop/NOVA Products`. A filename such as `Rolex Gold - 249.jpg` supplies the product name and AED price automatically; files without a price are moved to `Needs-Info` and are not published.
+
+The workflow `.github/workflows/product-inbox.yml` stages the image into `public/products/incoming/`, uses the resulting public image URL with EasyOrders' Create Product API, records the result in `product-queue/`, and lets the existing catalog sync update the storefront.
