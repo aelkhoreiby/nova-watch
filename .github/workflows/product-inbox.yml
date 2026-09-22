@@ -1,0 +1,81 @@
+name: NOVA Product Inbox
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/10 * * * *"
+  push:
+    branches: [main]
+    paths-ignore:
+      - "public/products/incoming/**"
+      - "product-queue/**"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nova-product-inbox
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: [self-hosted, nova-local]
+    env:
+      NOVA_AUTO_PUBLISH: "true"
+      NOVA_EASY_ORDERS_API_KEY: ${{ secrets.NOVA_EASY_ORDERS_API_KEY }}
+      NOVA_PRODUCT_INBOX: ${{ vars.NOVA_PRODUCT_INBOX }}
+      NOVA_PUBLIC_IMAGE_BASE: https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/public/products/incoming
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup inbox defaults
+        shell: python
+        run: |
+          from pathlib import Path
+          import os
+          raw = os.environ.get("NOVA_PRODUCT_INBOX", "").strip()
+          inbox = Path(raw).expanduser() if raw else Path.home() / "Desktop" / "NOVA Products"
+          (inbox / "Processed").mkdir(parents=True, exist_ok=True)
+          (inbox / "Needs-Info").mkdir(parents=True, exist_ok=True)
+          print(f"NOVA_PRODUCT_INBOX={inbox}")
+
+      - name: Stage new products
+        shell: python
+        run: |
+          import subprocess
+          subprocess.run(["python", "scripts/nova_product_ingest.py", "scan"], check=True)
+          subprocess.run(["git", "status", "--short"], check=True)
+
+      - name: Commit staged media and manifests
+        shell: python
+        run: |
+          import subprocess
+          subprocess.run(["git", "config", "user.name", "NOVA Product Bot"], check=True)
+          subprocess.run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], check=True)
+          subprocess.run(["git", "add", "public/products/incoming", "product-queue"], check=True)
+          diff = subprocess.run(["git", "diff", "--cached", "--quiet"])
+          if diff.returncode == 0:
+              print("No staged product changes.")
+          else:
+              subprocess.run(["git", "commit", "-m", "Stage NOVA product media"], check=True)
+              subprocess.run(["git", "push", "origin", "HEAD:main"], check=True)
+
+      - name: Publish staged products to EasyOrders
+        shell: python
+        run: |
+          import subprocess
+          subprocess.run(["python", "scripts/nova_product_ingest.py", "publish"], check=True)
+
+      - name: Commit publish results
+        shell: python
+        run: |
+          import subprocess
+          subprocess.run(["git", "config", "user.name", "NOVA Product Bot"], check=True)
+          subprocess.run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], check=True)
+          subprocess.run(["git", "add", "product-queue"], check=True)
+          diff = subprocess.run(["git", "diff", "--cached", "--quiet"])
+          if diff.returncode != 0:
+              subprocess.run(["git", "commit", "-m", "Record NOVA EasyOrders product publish"], check=True)
+              subprocess.run(["git", "push", "origin", "HEAD:main"], check=True)
