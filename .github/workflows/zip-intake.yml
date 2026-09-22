@@ -25,7 +25,7 @@ jobs:
         with:
           fetch-depth: 1
       - name: Analyze ZIP from Desktop inbox
-        shell: python
+        shell: cmd
         run: python scripts/nova_zip_intake.py
       - name: Commit intake report
         uses: actions/github-script@v8
