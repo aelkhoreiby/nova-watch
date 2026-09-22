@@ -1,0 +1,21 @@
+{
+  "name": "NOVA Classic Black",
+  "price": 999.0,
+  "sale_price": null,
+  "description": "NOVA Classic Black. Product shown in the supplied NOVA product image. Contact NOVA for current availability and product details.",
+  "slug": "nova-c62b4ae681",
+  "sku": "NOVA_C62B4AE681",
+  "thumb": "https://raw.githubusercontent.com/aelkhoreiby/nova-watch/main/public/products/incoming/nova-c62b4ae681/nova-c62b4ae681.jpg",
+  "images": [
+    "https://raw.githubusercontent.com/aelkhoreiby/nova-watch/main/public/products/incoming/nova-c62b4ae681/nova-c62b4ae681.jpg"
+  ],
+  "quantity": 1,
+  "track_stock": true,
+  "disable_orders_for_no_stock": false,
+  "currency": "AED",
+  "source_file": "C:\\Users\\Beta3 Labat\\Desktop\\NOVA Products\\NOVA Classic Black - 999.jpg",
+  "repo_image": "public/products/incoming/nova-c62b4ae681/nova-c62b4ae681.jpg",
+  "public_image_url": "https://raw.githubusercontent.com/aelkhoreiby/nova-watch/main/public/products/incoming/nova-c62b4ae681/nova-c62b4ae681.jpg",
+  "status": "image-staged",
+  "updated_at": "2026-09-22T14:09:46Z"
+}
