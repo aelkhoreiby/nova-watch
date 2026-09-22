@@ -350,11 +350,17 @@ def publish_staged() -> int:
 if __name__ == "__main__":
     mode = sys.argv[1] if len(sys.argv) > 1 else "scan"
     if mode == "scan":
-        raise SystemExit(scan())
+        processed = scan()
+        log(f"Scan complete: {processed} item(s) handled.")
+        raise SystemExit(0)
     if mode == "publish":
-        raise SystemExit(publish_staged())
+        published = publish_staged()
+        log(f"Publish complete: {published} product(s) published.")
+        raise SystemExit(0)
     if mode == "all":
-        scan()
-        raise SystemExit(publish_staged())
+        processed = scan()
+        published = publish_staged()
+        log(f"All complete: {processed} item(s) handled, {published} product(s) published.")
+        raise SystemExit(0)
     print("Usage: nova_product_ingest.py [scan|publish|all]")
     raise SystemExit(2)
