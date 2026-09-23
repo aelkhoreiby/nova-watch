@@ -25,6 +25,35 @@ def classify(p: Path):
     if e in ARCHIVE_EXT:return "archive"
     return "other"
 
+def make_visual_qc(actual: Path, typ: str, out_dir: Path, name: str):
+    out_dir.mkdir(parents=True, exist_ok=True)
+    result={"preview_files":[],"checks":{},"status":"PASS"}
+    try:
+        from PIL import Image
+        import numpy as np
+        import imageio_ffmpeg
+    except Exception as e:
+        return {"preview_files":[],"checks":{"dependencies":str(e)},"status":"FAIL"}
+    def check(im,label):
+        rgb=im.convert("RGB"); small=rgb.copy(); small.thumbnail((640,640))
+        preview=out_dir/(name+"-"+label+".jpg"); small.save(preview,"JPEG",quality=82,optimize=True)
+        result["preview_files"].append(str(preview))
+        arr=np.asarray(rgb.convert("L").resize((min(320,rgb.width),min(320,rgb.height))),dtype=np.float32)
+        mean=float(arr.mean()); contrast=float(arr.std())
+        result["checks"][label]={"mean_brightness":round(mean,2),"contrast":round(contrast,2),"width":im.width,"height":im.height}
+        if mean<8 or mean>248 or contrast<3: result["status"]="FAIL"
+    if typ=="image":
+        with Image.open(actual) as im: check(im,"image")
+    elif typ=="video":
+        ffmpeg=imageio_ffmpeg.get_ffmpeg_exe()
+        for label,ss in (("start","0.5"),("middle","8"),("end","15")):
+            frame=out_dir/(name+"-"+label+".jpg")
+            p=subprocess.run([ffmpeg,"-y","-ss",ss,"-i",str(actual),"-frames:v","1","-vf","scale=640:-1",str(frame)],capture_output=True,text=True,timeout=30)
+            if p.returncode==0 and frame.exists():
+                with Image.open(frame) as im: check(im,label)
+            else: result["status"]="FAIL"
+    return result
+
 def inspect_video(actual: Path):
     ffprobe=shutil.which("ffprobe")
     if ffprobe:
@@ -74,6 +103,9 @@ def main():
                     except Exception as e: entry["inspection_error"]=str(e)
                 elif typ=="video":
                     entry.update(inspect_video(actual))
+                safe_name = "".join(c if c.isalnum() or c in "._-" else "_" for c in p.stem)
+                qc_dir = Path("product-queue") / "visual-qc" / z.stem
+                entry["visual_qc"] = make_visual_qc(actual, typ, qc_dir, safe_name) if typ in {"image","video"} else {"status":"SKIP"}
                 item["entries"].append(entry)
             item["entry_count"]=len(infos)
             item["types"]=dict(counts)
