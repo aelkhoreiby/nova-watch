@@ -24,6 +24,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
+      - name: Prepare media inspection tools
+        run: py -3 -m pip install --disable-pip-version-check --user Pillow imageio-ffmpeg
       - name: Analyze ZIP from Desktop inbox
         run: py -3 scripts/nova_zip_intake.py
       - name: Commit intake report
