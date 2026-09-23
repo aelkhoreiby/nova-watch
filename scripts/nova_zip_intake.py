@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import hashlib, json, os, tempfile, zipfile
+import hashlib, json, os, tempfile, zipfile, subprocess, shutil
 from pathlib import Path
 from collections import Counter
 
@@ -39,16 +39,41 @@ def main():
     report["status"]="analyzed"
     for z in zips:
         item={"file":z.name,"size_bytes":z.stat().st_size,"sha256":sha256(z),"entries":[]}
-        with zipfile.ZipFile(z) as zz:
-            infos=[i for i in zz.infolist() if not i.is_dir()]
+        with tempfile.TemporaryDirectory(prefix="nova-intake-") as td:
+            extract_dir=Path(td)
+            with zipfile.ZipFile(z) as zz:
+                infos=[i for i in zz.infolist() if not i.is_dir()]
+                zz.extractall(extract_dir)
             counts=Counter()
             for i in infos:
                 p=Path(i.filename)
                 typ=classify(p); counts[typ]+=1
-                item["entries"].append({"path":i.filename,"size_bytes":i.file_size,"type":typ})
+                entry={"path":i.filename,"size_bytes":i.file_size,"type":typ}
+                actual=extract_dir / p
+                if typ=="image":
+                    try:
+                        from PIL import Image
+                        with Image.open(actual) as im:
+                            entry["width"],entry["height"]=im.size
+                            entry["format"]=im.format
+                            entry["mode"]=im.mode
+                    except Exception as e:
+                        entry["inspection_error"]=str(e)
+                elif typ=="video":
+                    ffprobe=shutil.which("ffprobe")
+                    if ffprobe:
+                        try:
+                            raw=subprocess.check_output([ffprobe,"-v","error","-show_entries","format=duration,size:stream=width,height,r_frame_rate,codec_name","-of","json",str(actual)],text=True,timeout=20)
+                            entry["ffprobe"]=json.loads(raw)
+                        except Exception as e:
+                            entry["inspection_error"]=str(e)
+                    else:
+                        entry["inspection_note"]="ffprobe not available on runner"
+                item["entries"].append(entry)
             item["entry_count"]=len(infos)
             item["types"]=dict(counts)
             item["product_candidates"]=sorted({str(Path(i.filename).parts[0]) for i in infos if len(Path(i.filename).parts)>1})
+            item["content_inspection"]="extracted_and_metadata_inspected"
         report["archives"].append(item)
         print(f"ZIP: {z.name} | {len(item['entries'])} files | {dict(item['types'])}")
     out.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding="utf-8")
