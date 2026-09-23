@@ -14,14 +14,49 @@
           "width": 3024,
           "height": 4032,
           "format": "JPEG",
-          "mode": "RGB"
+          "mode": "RGB",
+          "visual_qc": {
+            "preview_files": [
+              "product-queue\\visual-qc\\WhatsApp Unknown 2026-09-22 at 10.36.00 PM\\WhatsApp_Image_2026-09-12_at_2.14.35_PM-image.jpg"
+            ],
+            "checks": {
+              "image": {
+                "mean_brightness": 135.81,
+                "contrast": 53.79,
+                "width": 3024,
+                "height": 4032
+              }
+            },
+            "status": "PASS"
+          }
         },
         {
           "path": "WhatsApp Video 2026-09-12 at 2.14.40 PM.mp4",
           "size_bytes": 5075925,
           "type": "video",
           "method": "ffmpeg-fallback",
-          "raw_probe": "Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'C:\\Users\\BETA3L~1\\AppData\\Local\\Temp\\nova-intake-excr6az8\\WhatsApp Video 2026-09-12 at 2.14.40 PM.mp4':\n  Metadata:\n    major_brand     : mp42\n    minor_version   : 0\n    compatible_brands: mp42isom\n  Duration: 00:00:14.56, start: 0.000000, bitrate: 2788 kb/s\n  Stream #0:0[0x1](und): Video: h264 (Baseline) (avc1 / 0x31637661), yuv420p(tv, bt709, progressive), 720x1280, 2785 kb/s, 59.95 fps, 59.94 tbr, 600 tbn (default)\n      Metadata:\n        vendor_id       : [0][0][0][0]\nAt least one output file must be specified\n"
+          "raw_probe": "Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'C:\\Users\\BETA3L~1\\AppData\\Local\\Temp\\nova-intake-9pcxi1_0\\WhatsApp Video 2026-09-12 at 2.14.40 PM.mp4':\n  Metadata:\n    major_brand     : mp42\n    minor_version   : 0\n    compatible_brands: mp42isom\n  Duration: 00:00:14.56, start: 0.000000, bitrate: 2788 kb/s\n  Stream #0:0[0x1](und): Video: h264 (Baseline) (avc1 / 0x31637661), yuv420p(tv, bt709, progressive), 720x1280, 2785 kb/s, 59.95 fps, 59.94 tbr, 600 tbn (default)\n      Metadata:\n        vendor_id       : [0][0][0][0]\nAt least one output file must be specified\n",
+          "visual_qc": {
+            "preview_files": [
+              "product-queue\\visual-qc\\WhatsApp Unknown 2026-09-22 at 10.36.00 PM\\WhatsApp_Video_2026-09-12_at_2.14.40_PM-start.jpg",
+              "product-queue\\visual-qc\\WhatsApp Unknown 2026-09-22 at 10.36.00 PM\\WhatsApp_Video_2026-09-12_at_2.14.40_PM-middle.jpg"
+            ],
+            "checks": {
+              "start": {
+                "mean_brightness": 113.73,
+                "contrast": 63.29,
+                "width": 640,
+                "height": 1138
+              },
+              "middle": {
+                "mean_brightness": 139.95,
+                "contrast": 60.5,
+                "width": 640,
+                "height": 1138
+              }
+            },
+            "status": "FAIL"
+          }
         },
         {
           "path": "WhatsApp Image 2026-09-12 at 2.14.40 PM.jpeg",
@@ -30,14 +65,56 @@
           "width": 3024,
           "height": 4032,
           "format": "JPEG",
-          "mode": "RGB"
+          "mode": "RGB",
+          "visual_qc": {
+            "preview_files": [
+              "product-queue\\visual-qc\\WhatsApp Unknown 2026-09-22 at 10.36.00 PM\\WhatsApp_Image_2026-09-12_at_2.14.40_PM-image.jpg"
+            ],
+            "checks": {
+              "image": {
+                "mean_brightness": 141.43,
+                "contrast": 55.17,
+                "width": 3024,
+                "height": 4032
+              }
+            },
+            "status": "PASS"
+          }
         },
         {
           "path": "WhatsApp Video 2026-09-12 at 2.14.47 PM.mp4",
           "size_bytes": 5800245,
           "type": "video",
           "method": "ffmpeg-fallback",
-          "raw_probe": "Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'C:\\Users\\BETA3L~1\\AppData\\Local\\Temp\\nova-intake-excr6az8\\WhatsApp Video 2026-09-12 at 2.14.47 PM.mp4':\n  Metadata:\n    major_brand     : mp42\n    minor_version   : 0\n    compatible_brands: mp42isom\n  Duration: 00:00:16.72, start: 0.000000, bitrate: 2775 kb/s\n  Stream #0:0[0x1](und): Video: h264 (Baseline) (avc1 / 0x31637661), yuv420p(tv, bt709, progressive), 720x1280, 2773 kb/s, 59.94 fps, 59.94 tbr, 600 tbn (default)\n      Metadata:\n        vendor_id       : [0][0][0][0]\nAt least one output file must be specified\n"
+          "raw_probe": "Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'C:\\Users\\BETA3L~1\\AppData\\Local\\Temp\\nova-intake-9pcxi1_0\\WhatsApp Video 2026-09-12 at 2.14.47 PM.mp4':\n  Metadata:\n    major_brand     : mp42\n    minor_version   : 0\n    compatible_brands: mp42isom\n  Duration: 00:00:16.72, start: 0.000000, bitrate: 2775 kb/s\n  Stream #0:0[0x1](und): Video: h264 (Baseline) (avc1 / 0x31637661), yuv420p(tv, bt709, progressive), 720x1280, 2773 kb/s, 59.94 fps, 59.94 tbr, 600 tbn (default)\n      Metadata:\n        vendor_id       : [0][0][0][0]\nAt least one output file must be specified\n",
+          "visual_qc": {
+            "preview_files": [
+              "product-queue\\visual-qc\\WhatsApp Unknown 2026-09-22 at 10.36.00 PM\\WhatsApp_Video_2026-09-12_at_2.14.47_PM-start.jpg",
+              "product-queue\\visual-qc\\WhatsApp Unknown 2026-09-22 at 10.36.00 PM\\WhatsApp_Video_2026-09-12_at_2.14.47_PM-middle.jpg",
+              "product-queue\\visual-qc\\WhatsApp Unknown 2026-09-22 at 10.36.00 PM\\WhatsApp_Video_2026-09-12_at_2.14.47_PM-end.jpg"
+            ],
+            "checks": {
+              "start": {
+                "mean_brightness": 107.2,
+                "contrast": 65.15,
+                "width": 640,
+                "height": 1138
+              },
+              "middle": {
+                "mean_brightness": 121.0,
+                "contrast": 68.86,
+                "width": 640,
+                "height": 1138
+              },
+              "end": {
+                "mean_brightness": 108.74,
+                "contrast": 62.38,
+                "width": 640,
+                "height": 1138
+              }
+            },
+            "status": "PASS"
+          }
         }
       ],
       "entry_count": 4,
