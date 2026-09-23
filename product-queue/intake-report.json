@@ -11,25 +11,33 @@
           "path": "WhatsApp Image 2026-09-12 at 2.14.35 PM.jpeg",
           "size_bytes": 1559136,
           "type": "image",
-          "inspection_error": "No module named 'PIL'"
+          "width": 3024,
+          "height": 4032,
+          "format": "JPEG",
+          "mode": "RGB"
         },
         {
           "path": "WhatsApp Video 2026-09-12 at 2.14.40 PM.mp4",
           "size_bytes": 5075925,
           "type": "video",
-          "inspection_note": "ffprobe not available on runner"
+          "method": "ffmpeg-fallback",
+          "raw_probe": "Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'C:\\Users\\BETA3L~1\\AppData\\Local\\Temp\\nova-intake-excr6az8\\WhatsApp Video 2026-09-12 at 2.14.40 PM.mp4':\n  Metadata:\n    major_brand     : mp42\n    minor_version   : 0\n    compatible_brands: mp42isom\n  Duration: 00:00:14.56, start: 0.000000, bitrate: 2788 kb/s\n  Stream #0:0[0x1](und): Video: h264 (Baseline) (avc1 / 0x31637661), yuv420p(tv, bt709, progressive), 720x1280, 2785 kb/s, 59.95 fps, 59.94 tbr, 600 tbn (default)\n      Metadata:\n        vendor_id       : [0][0][0][0]\nAt least one output file must be specified\n"
         },
         {
           "path": "WhatsApp Image 2026-09-12 at 2.14.40 PM.jpeg",
           "size_bytes": 1560181,
           "type": "image",
-          "inspection_error": "No module named 'PIL'"
+          "width": 3024,
+          "height": 4032,
+          "format": "JPEG",
+          "mode": "RGB"
         },
         {
           "path": "WhatsApp Video 2026-09-12 at 2.14.47 PM.mp4",
           "size_bytes": 5800245,
           "type": "video",
-          "inspection_note": "ffprobe not available on runner"
+          "method": "ffmpeg-fallback",
+          "raw_probe": "Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'C:\\Users\\BETA3L~1\\AppData\\Local\\Temp\\nova-intake-excr6az8\\WhatsApp Video 2026-09-12 at 2.14.47 PM.mp4':\n  Metadata:\n    major_brand     : mp42\n    minor_version   : 0\n    compatible_brands: mp42isom\n  Duration: 00:00:16.72, start: 0.000000, bitrate: 2775 kb/s\n  Stream #0:0[0x1](und): Video: h264 (Baseline) (avc1 / 0x31637661), yuv420p(tv, bt709, progressive), 720x1280, 2773 kb/s, 59.94 fps, 59.94 tbr, 600 tbn (default)\n      Metadata:\n        vendor_id       : [0][0][0][0]\nAt least one output file must be specified\n"
         }
       ],
       "entry_count": 4,
