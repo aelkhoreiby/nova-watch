@@ -4,16 +4,16 @@ import hashlib, json, os, tempfile, zipfile, subprocess, shutil
 from pathlib import Path
 from collections import Counter
 
-IMAGE_EXT = {".jpg",".jpeg",".png",".webp",".avif",".gif"}
-VIDEO_EXT = {".mp4",".mov",".m4v",".avi",".mkv",".webm"}
-DOC_EXT = {".pdf",".doc",".docx",".txt",".rtf"}
-SHEET_EXT = {".csv",".xlsx",".xls"}
-ARCHIVE_EXT = {".zip",".rar",".7z"}
+IMAGE_EXT={".jpg",".jpeg",".png",".webp",".avif",".gif"}
+VIDEO_EXT={".mp4",".mov",".m4v",".avi",".mkv",".webm"}
+DOC_EXT={".pdf",".doc",".docx",".txt",".rtf"}
+SHEET_EXT={".csv",".xlsx",".xls"}
+ARCHIVE_EXT={".zip",".rar",".7z"}
 
 def sha256(p: Path):
     h=hashlib.sha256()
     with p.open("rb") as f:
-        for b in iter(lambda:f.read(1024*1024), b""): h.update(b)
+        for b in iter(lambda:f.read(1024*1024),b""): h.update(b)
     return h.hexdigest()
 
 def classify(p: Path):
@@ -25,17 +25,33 @@ def classify(p: Path):
     if e in ARCHIVE_EXT:return "archive"
     return "other"
 
+def inspect_video(actual: Path):
+    ffprobe=shutil.which("ffprobe")
+    if ffprobe:
+        try:
+            raw=subprocess.check_output([ffprobe,"-v","error","-show_entries","format=duration,size:stream=width,height,r_frame_rate,codec_name","-of","json",str(actual)],text=True,timeout=20)
+            return {"method":"ffprobe","data":json.loads(raw)}
+        except Exception as e:
+            return {"inspection_error":str(e)}
+    try:
+        import imageio_ffmpeg
+        ffmpeg=imageio_ffmpeg.get_ffmpeg_exe()
+        proc=subprocess.run([ffmpeg,"-hide_banner","-i",str(actual)],capture_output=True,text=True,timeout=20)
+        text=proc.stderr
+        result={"method":"ffmpeg-fallback","raw_probe":text[-4000:]}
+        return result
+    except Exception as e:
+        return {"inspection_error":str(e),"inspection_note":"ffprobe and imageio-ffmpeg unavailable"}
+
 def main():
     inbox=Path(os.environ.get("NOVA_PRODUCT_INBOX","")).expanduser()
-    if not inbox:
-        inbox=Path.home()/"Desktop"/"NOVA Products"
+    if not inbox: inbox=Path.home()/"Desktop"/"NOVA Products"
     zips=sorted(p for p in inbox.iterdir() if p.is_file() and p.suffix.lower()==".zip")
     out=Path("product-queue")/"intake-report.json"
     out.parent.mkdir(parents=True,exist_ok=True)
     report={"status":"no-zip","inbox":str(inbox),"archives":[]}
     if not zips:
-        out.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding="utf-8")
-        print("No ZIP found:",inbox); return
+        out.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding="utf-8"); print("No ZIP found:",inbox); return
     report["status"]="analyzed"
     for z in zips:
         item={"file":z.name,"size_bytes":z.stat().st_size,"sha256":sha256(z),"entries":[]}
@@ -46,29 +62,18 @@ def main():
                 zz.extractall(extract_dir)
             counts=Counter()
             for i in infos:
-                p=Path(i.filename)
-                typ=classify(p); counts[typ]+=1
+                p=Path(i.filename); typ=classify(p); counts[typ]+=1
                 entry={"path":i.filename,"size_bytes":i.file_size,"type":typ}
-                actual=extract_dir / p
+                actual=extract_dir/p
                 if typ=="image":
                     try:
                         from PIL import Image
                         with Image.open(actual) as im:
                             entry["width"],entry["height"]=im.size
-                            entry["format"]=im.format
-                            entry["mode"]=im.mode
-                    except Exception as e:
-                        entry["inspection_error"]=str(e)
+                            entry["format"],entry["mode"]=im.format,im.mode
+                    except Exception as e: entry["inspection_error"]=str(e)
                 elif typ=="video":
-                    ffprobe=shutil.which("ffprobe")
-                    if ffprobe:
-                        try:
-                            raw=subprocess.check_output([ffprobe,"-v","error","-show_entries","format=duration,size:stream=width,height,r_frame_rate,codec_name","-of","json",str(actual)],text=True,timeout=20)
-                            entry["ffprobe"]=json.loads(raw)
-                        except Exception as e:
-                            entry["inspection_error"]=str(e)
-                    else:
-                        entry["inspection_note"]="ffprobe not available on runner"
+                    entry.update(inspect_video(actual))
                 item["entries"].append(entry)
             item["entry_count"]=len(infos)
             item["types"]=dict(counts)
