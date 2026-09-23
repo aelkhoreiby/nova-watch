@@ -25,9 +25,16 @@ jobs:
         with:
           fetch-depth: 1
       - name: Prepare media inspection tools
-        run: py -3 -m pip install --disable-pip-version-check --user Pillow imageio-ffmpeg
+        run: py -3 -m pip install --disable-pip-version-check --user Pillow imageio-ffmpeg numpy
       - name: Analyze ZIP from Desktop inbox
         run: py -3 scripts/nova_zip_intake.py
+      - name: Upload visual QC previews
+        uses: actions/upload-artifact@v4
+        with:
+          name: nova-visual-qc
+          path: product-queue/visual-qc
+          if-no-files-found: warn
+          retention-days: 7
       - name: Commit intake report
         uses: actions/github-script@v8
         with:
