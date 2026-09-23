@@ -10,22 +10,26 @@
         {
           "path": "WhatsApp Image 2026-09-12 at 2.14.35 PM.jpeg",
           "size_bytes": 1559136,
-          "type": "image"
+          "type": "image",
+          "inspection_error": "No module named 'PIL'"
         },
         {
           "path": "WhatsApp Video 2026-09-12 at 2.14.40 PM.mp4",
           "size_bytes": 5075925,
-          "type": "video"
+          "type": "video",
+          "inspection_note": "ffprobe not available on runner"
         },
         {
           "path": "WhatsApp Image 2026-09-12 at 2.14.40 PM.jpeg",
           "size_bytes": 1560181,
-          "type": "image"
+          "type": "image",
+          "inspection_error": "No module named 'PIL'"
         },
         {
           "path": "WhatsApp Video 2026-09-12 at 2.14.47 PM.mp4",
           "size_bytes": 5800245,
-          "type": "video"
+          "type": "video",
+          "inspection_note": "ffprobe not available on runner"
         }
       ],
       "entry_count": 4,
@@ -33,7 +37,8 @@
         "image": 2,
         "video": 2
       },
-      "product_candidates": []
+      "product_candidates": [],
+      "content_inspection": "extracted_and_metadata_inspected"
     }
   ]
 }
